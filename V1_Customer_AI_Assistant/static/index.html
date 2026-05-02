@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 客户跟进助手 V1</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 24px;
+            color: #222;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 18px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            margin-bottom: 18px;
+        }
+        input, textarea, select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            margin: 7px 0;
+            border: 1px solid #ddd;
+            border-radius: 9px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+        button {
+            border: none;
+            border-radius: 9px;
+            padding: 10px 14px;
+            margin: 6px 6px 6px 0;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            font-size: 14px;
+        }
+        button.secondary {
+            background: #475569;
+        }
+        button.light {
+            background: #e5e7eb;
+            color: #111827;
+        }
+        button.danger {
+            background: #dc2626;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .customer-item {
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            background: #fafafa;
+        }
+        .customer-item:hover {
+            background: #eff6ff;
+        }
+        .muted {
+            color: #777;
+            font-size: 13px;
+        }
+        .result {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 10px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .ai-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 14px 0 8px;
+            color: #111827;
+        }
+        .ai-line {
+            margin: 6px 0;
+        }
+        .ai-space {
+            height: 10px;
+        }
+        .ai-list {
+            margin: 6px 0 6px 18px;
+        }
+        .ai-list::before {
+            content: "• ";
+            color: #2563eb;
+            font-weight: bold;
+        }
+        .result strong {
+            font-weight: 700;
+            color: #111827;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .status-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .edit-box {
+            display: none;
+            margin-top: 14px;
+            padding: 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+        .edit-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .detail-actions {
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>AI 客户跟进助手 V1</h1>
+
+    <div class="grid">
+        <div>
+            <div class="card">
+                <h2>新增客户</h2>
+                <input id="name" placeholder="客户姓名，例如：张经理">
+                <input id="company" placeholder="公司名称，例如：某某科技有限公司">
+                <input id="phone" placeholder="电话">
+                <input id="email" placeholder="邮箱">
+                <input id="industry" placeholder="行业，例如：汽车电子 / 工业设备">
+                <select id="level">
+                    <option value="" disabled selected>客户等级</option>
+                    <option value="A">A 重点客户</option>
+                    <option value="B">B 普通客户</option>
+                    <option value="C">C 潜在客户</option>
+                </select>
+                <select id="intention">
+                    <option value="" disabled selected>意向程度</option>
+                    <option value="高">高</option>
+                    <option value="中">中</option>
+                    <option value="低">低</option>
+                </select>
+                <select id="cooperationStatus">
+                    <option value="" disabled selected>合作状态</option>
+                    <option value="已合作">已合作</option>
+                    <option value="跟进洽谈">跟进洽谈</option>
+                    <option value="暂未合作">暂未合作</option>
+                </select>
+                <button onclick="createCustomer()">保存客户</button>
+            </div>
+
+            <div class="card">
+                <h2>客户列表</h2>
+                <div id="customerList"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h2>客户详情</h2>
+                <div id="customerDetail" class="muted">请先选择一个客户</div>
+
+                <div id="detailActions" class="detail-actions" style="display:none;">
+                    <button id="editCustomerBtn" class="secondary" onclick="showEditCustomerForm()">
+                        修改客户详情
+                    </button>
+                    <button id="deleteCustomerBtn" class="danger" onclick="deleteSelectedCustomer()">
+                        删除客户
+                    </button>
+                </div>
+
+                <div id="editCustomerBox" class="edit-box">
+                    <div class="edit-title">修改客户信息</div>
+                    <input id="editName" placeholder="客户姓名">
+                    <input id="editCompany" placeholder="公司名称">
+                    <input id="editPhone" placeholder="电话">
+                    <input id="editEmail" placeholder="邮箱">
+                    <input id="editIndustry" placeholder="行业，例如：汽车电子 / 工业设备">
+
+                    <select id="editLevel">
+                        <option value="" disabled>客户等级</option>
+                        <option value="A">A 重点客户</option>
+                        <option value="B">B 普通客户</option>
+                        <option value="C">C 潜在客户</option>
+                    </select>
+
+                    <select id="editIntention">
+                        <option value="" disabled>意向程度</option>
+                        <option value="高">高</option>
+                        <option value="中">中</option>
+                        <option value="低">低</option>
+                    </select>
+
+                    <select id="editCooperationStatus">
+                        <option value="" disabled>合作状态</option>
+                        <option value="已合作">已合作</option>
+                        <option value="跟进洽谈">跟进洽谈</option>
+                        <option value="暂未合作">暂未合作</option>
+                    </select>
+
+                    <button onclick="updateCustomer()">保存修改</button>
+                    <button class="light" onclick="hideEditCustomerForm()">取消</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>新增跟进记录</h2>
+                <textarea id="followupContent" placeholder="例如：今天电话沟通，客户对 10.25 寸车载显示屏感兴趣，希望了解价格和交期。"></textarea>
+                <textarea id="nextAction" placeholder="下一步动作，例如：明天发送产品资料和初步报价。"></textarea>
+                <button onclick="createFollowup()">保存跟进</button>
+            </div>
+
+            <div class="card">
+                <h2>AI 分析</h2>
+                <button onclick="aiSummary()">AI 总结跟进记录</button>
+                <button class="secondary" onclick="aiSuggestion()">AI 生成下一步建议</button>
+                <div id="aiResult" class="result">AI 结果会显示在这里</div>
+            </div>
+
+            <div class="card">
+                <h2>历史跟进记录</h2>
+                <div id="followupList" class="muted">暂无记录</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedCustomerId = null;
+let selectedCustomerData = null;
+
+function escapeHtml(text) {
+    return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function formatInlineMarkdown(text) {
+    let safe = escapeHtml(text);
+    safe = safe.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    safe = safe.replace(/__(.*?)__/g, "<strong>$1</strong>");
+    return safe;
+}
+
+function renderAIText(text) {
+    if (!text) {
+        return "暂无 AI 结果";
+    }
+
+    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    return lines.map(line => {
+        let raw = line.trim();
+
+        if (!raw) {
+            return '<div class="ai-space"></div>';
+        }
+
+        raw = raw.replace(/^#{1,6}\s*/, "");
+
+        if (/^[-*]\s+/.test(raw)) {
+            raw = raw.replace(/^[-*]\s+/, "");
+            return `<div class="ai-list">${formatInlineMarkdown(raw)}</div>`;
+        }
+
+        if (/^\d+\.\s+/.test(raw)) {
+            return `<div class="ai-line">${formatInlineMarkdown(raw)}</div>`;
+        }
+
+        if (
+            raw.includes("总结") ||
+            raw.includes("当前阶段") ||
+            raw.includes("客户需求") ||
+            raw.includes("风险") ||
+            raw.includes("建议") ||
+            raw.includes("话术") ||
+            raw.includes("优先级") ||
+            raw.includes("行动")
+        ) {
+            if (raw.length <= 35) {
+                return `<div class="ai-title">${formatInlineMarkdown(raw)}</div>`;
+            }
+        }
+
+        return `<div class="ai-line">${formatInlineMarkdown(raw)}</div>`;
+    }).join("");
+}
+
+async function request(url, options = {}) {
+    const res = await fetch(url, {
+        headers: {"Content-Type": "application/json"},
+        ...options
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        alert(err.detail || "请求失败");
+        throw new Error(err.detail || "请求失败");
+    }
+    return res.json();
+}
+
+async function createCustomer() {
+    const data = {
+        name: document.getElementById("name").value,
+        company: document.getElementById("company").value,
+        phone: document.getElementById("phone").value,
+        email: document.getElementById("email").value,
+        industry: document.getElementById("industry").value,
+        level: document.getElementById("level").value,
+        intention: document.getElementById("intention").value,
+        cooperation_status: document.getElementById("cooperationStatus").value
+    };
+
+    if (!data.name || !data.company) {
+        alert("客户姓名和公司名称必填");
+        return;
+    }
+
+    await request("/customers", {
+        method: "POST",
+        body: JSON.stringify(data)
+    });
+
+    document.getElementById("name").value = "";
+    document.getElementById("company").value = "";
+    document.getElementById("phone").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("industry").value = "";
+    document.getElementById("level").value = "";
+    document.getElementById("intention").value = "";
+    document.getElementById("cooperationStatus").value = "";
+
+    loadCustomers();
+}
+
+async function loadCustomers() {
+    const customers = await request("/customers");
+    const box = document.getElementById("customerList");
+
+    if (customers.length === 0) {
+        box.innerHTML = '<div class="muted">暂无客户，请先新增一个客户。</div>';
+        return;
+    }
+
+    box.innerHTML = customers.map(c => `
+        <div class="customer-item" onclick="selectCustomer(${c.id})">
+            <div>
+                <b>${c.name}</b>
+                <span class="tag">${c.intention || "未设置意向"}</span>
+                <span class="status-tag">${c.cooperation_status || "未设置状态"}</span>
+            </div>
+            <div class="muted">${c.company}</div>
+            <div class="muted">${c.industry || "未知行业"} · ${c.level || "未分级"}</div>
+        </div>
+    `).join("");
+}
+
+async function selectCustomer(id) {
+    selectedCustomerId = id;
+    const c = await request(`/customers/${id}`);
+    selectedCustomerData = c;
+
+    document.getElementById("customerDetail").innerHTML = `
+        <b>${c.name}</b>
+        <span class="tag">${c.level || "未分级"}</span>
+        <span class="status-tag">${c.cooperation_status || "未设置状态"}</span>
+        <p>公司：${c.company}</p>
+        <p>电话：${c.phone || "未填写"}</p>
+        <p>邮箱：${c.email || "未填写"}</p>
+        <p>行业：${c.industry || "未知"}</p>
+        <p>意向：${c.intention || "未设置"}</p>
+        <p>合作状态：${c.cooperation_status || "未设置"}</p>
+    `;
+
+    document.getElementById("detailActions").style.display = "block";
+    hideEditCustomerForm();
+
+    document.getElementById("aiResult").innerHTML = "AI 结果会显示在这里";
+    loadFollowups();
+}
+
+function clearSelectedCustomer() {
+    selectedCustomerId = null;
+    selectedCustomerData = null;
+    document.getElementById("customerDetail").innerHTML = "请先选择一个客户";
+    document.getElementById("customerDetail").className = "muted";
+    document.getElementById("detailActions").style.display = "none";
+    hideEditCustomerForm();
+    document.getElementById("followupList").innerHTML = '<div class="muted">暂无记录</div>';
+    document.getElementById("aiResult").innerHTML = "AI 结果会显示在这里";
+}
+
+async function deleteSelectedCustomer() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+
+    const ok = confirm("确定要删除这个客户吗？删除后，该客户的历史跟进记录也会一起删除。");
+    if (!ok) {
+        return;
+    }
+
+    await request(`/customers/${selectedCustomerId}`, {
+        method: "DELETE"
+    });
+
+    clearSelectedCustomer();
+    await loadCustomers();
+    alert("客户已删除");
+}
+
+function showEditCustomerForm() {
+    if (!selectedCustomerData) {
+        alert("请先选择客户");
+        return;
+    }
+
+    document.getElementById("editName").value = selectedCustomerData.name || "";
+    document.getElementById("editCompany").value = selectedCustomerData.company || "";
+    document.getElementById("editPhone").value = selectedCustomerData.phone || "";
+    document.getElementById("editEmail").value = selectedCustomerData.email || "";
+    document.getElementById("editIndustry").value = selectedCustomerData.industry || "";
+    document.getElementById("editLevel").value = selectedCustomerData.level || "";
+    document.getElementById("editIntention").value = selectedCustomerData.intention || "";
+    document.getElementById("editCooperationStatus").value = selectedCustomerData.cooperation_status || "";
+
+    document.getElementById("editCustomerBox").style.display = "block";
+}
+
+function hideEditCustomerForm() {
+    document.getElementById("editCustomerBox").style.display = "none";
+}
+
+async function updateCustomer() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+
+    const data = {
+        name: document.getElementById("editName").value,
+        company: document.getElementById("editCompany").value,
+        phone: document.getElementById("editPhone").value,
+        email: document.getElementById("editEmail").value,
+        industry: document.getElementById("editIndustry").value,
+        level: document.getElementById("editLevel").value,
+        intention: document.getElementById("editIntention").value,
+        cooperation_status: document.getElementById("editCooperationStatus").value
+    };
+
+    if (!data.name || !data.company) {
+        alert("客户姓名和公司名称不能为空");
+        return;
+    }
+
+    await request(`/customers/${selectedCustomerId}`, {
+        method: "PUT",
+        body: JSON.stringify(data)
+    });
+
+    alert("客户信息已修改");
+    hideEditCustomerForm();
+    await loadCustomers();
+    await selectCustomer(selectedCustomerId);
+}
+
+async function createFollowup() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+
+    const data = {
+        content: document.getElementById("followupContent").value,
+        next_action: document.getElementById("nextAction").value
+    };
+
+    if (!data.content) {
+        alert("跟进内容不能为空");
+        return;
+    }
+
+    await request(`/customers/${selectedCustomerId}/followups`, {
+        method: "POST",
+        body: JSON.stringify(data)
+    });
+
+    document.getElementById("followupContent").value = "";
+    document.getElementById("nextAction").value = "";
+    loadFollowups();
+}
+
+async function loadFollowups() {
+    if (!selectedCustomerId) return;
+    const list = await request(`/customers/${selectedCustomerId}/followups`);
+    const box = document.getElementById("followupList");
+
+    if (list.length === 0) {
+        box.innerHTML = '<div class="muted">暂无跟进记录。</div>';
+        return;
+    }
+
+    box.innerHTML = list.map(f => `
+        <div class="customer-item">
+            <div>${f.content}</div>
+            <div class="muted">下一步：${f.next_action || "暂无"}</div>
+            <div class="muted">时间：${new Date(f.created_at).toLocaleString()}</div>
+        </div>
+    `).join("");
+}
+
+async function aiSummary() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+    document.getElementById("aiResult").innerHTML = "AI 正在分析中...";
+    const data = await request(`/customers/${selectedCustomerId}/ai/summary`, {method: "POST"});
+    document.getElementById("aiResult").innerHTML = renderAIText(data.result);
+}
+
+async function aiSuggestion() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+    document.getElementById("aiResult").innerHTML = "AI 正在生成建议...";
+    const data = await request(`/customers/${selectedCustomerId}/ai/suggestion`, {method: "POST"});
+    document.getElementById("aiResult").innerHTML = renderAIText(data.result);
+}
+
+loadCustomers();
+</script>
+</body>
+</html>

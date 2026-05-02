@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 客户跟进助手 V2</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 24px;
+            color: #222;
+        }
+        .container {
+            max-width: 1160px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+        .version-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 13px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 14px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+        }
+        .nav button {
+            flex: 1;
+            margin: 0;
+            background: #e5e7eb;
+            color: #111827;
+            font-weight: 600;
+        }
+        .nav button.active {
+            background: #2563eb;
+            color: #fff;
+        }
+        .page-section {
+            display: none;
+        }
+        .page-section.active {
+            display: block;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .grid-even {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            margin-bottom: 18px;
+        }
+        input, textarea, select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            margin: 7px 0;
+            border: 1px solid #ddd;
+            border-radius: 9px;
+            font-size: 14px;
+        }
+        input[type="file"] {
+            background: #fff;
+        }
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+        button {
+            border: none;
+            border-radius: 9px;
+            padding: 10px 14px;
+            margin: 6px 6px 6px 0;
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            font-size: 14px;
+        }
+        button.secondary {
+            background: #475569;
+        }
+        button.light {
+            background: #e5e7eb;
+            color: #111827;
+        }
+        button.danger {
+            background: #dc2626;
+        }
+        button.green {
+            background: #16a34a;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .customer-item {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            background: #fafafa;
+        }
+        .customer-item:hover {
+            background: #eff6ff;
+        }
+        .muted {
+            color: #777;
+            font-size: 13px;
+        }
+        .result {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 10px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .ai-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 14px 0 8px;
+            color: #111827;
+        }
+        .ai-line {
+            margin: 6px 0;
+        }
+        .ai-space {
+            height: 10px;
+        }
+        .ai-list {
+            margin: 6px 0 6px 18px;
+        }
+        .ai-list::before {
+            content: "• ";
+            color: #2563eb;
+            font-weight: bold;
+        }
+        .result strong {
+            font-weight: 700;
+            color: #111827;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .status-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .hint-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        .edit-box {
+            display: none;
+            margin-top: 14px;
+            padding: 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+        }
+        .edit-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .detail-actions {
+            margin-top: 12px;
+        }
+        .source-box {
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .current-customer {
+            padding: 12px;
+            border-radius: 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            margin-bottom: 12px;
+        }
+        .page-intro {
+            color: #64748b;
+            margin: 0 0 16px;
+            line-height: 1.7;
+        }
+        @media (max-width: 900px) {
+            .grid, .grid-even {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .nav {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>AI 客户跟进助手 V2 <span class="version-tag">RAG 知识库版</span></h1>
+    </div>
+
+    <div class="nav">
+        <button id="tabCustomer" class="active" onclick="showPage('customer')">客户管理</button>
+        <button id="tabAI" onclick="showPage('ai')">AI 跟进分析</button>
+        <button id="tabRAG" onclick="showPage('rag')">RAG 知识库问答</button>
+    </div>
+
+    <!-- 客户管理模块 -->
+    <div id="pageCustomer" class="page-section active">
+        <p class="page-intro">用于维护客户资料、客户状态和跟进记录，是 V2 的基础客户数据层。</p>
+
+        <div class="grid">
+            <div>
+                <div class="card">
+                    <h2>新增客户</h2>
+                    <input id="name" placeholder="客户姓名，例如：张经理">
+                    <input id="company" placeholder="公司名称，例如：某某科技有限公司">
+                    <input id="phone" placeholder="电话">
+                    <input id="email" placeholder="邮箱">
+                    <input id="industry" placeholder="行业，例如：汽车电子 / 工业设备">
+                    <select id="level">
+                        <option value="" disabled selected>客户等级</option>
+                        <option value="A">A 重点客户</option>
+                        <option value="B">B 普通客户</option>
+                        <option value="C">C 潜在客户</option>
+                    </select>
+                    <select id="intention">
+                        <option value="" disabled selected>意向程度</option>
+                        <option value="高">高</option>
+                        <option value="中">中</option>
+                        <option value="低">低</option>
+                    </select>
+                    <select id="cooperationStatus">
+                        <option value="" disabled selected>合作状态</option>
+                        <option value="已合作">已合作</option>
+                        <option value="跟进洽谈">跟进洽谈</option>
+                        <option value="暂未合作">暂未合作</option>
+                    </select>
+                    <button onclick="createCustomer()">保存客户</button>
+                </div>
+
+                <div class="card">
+                    <h2>客户列表</h2>
+                    <div id="customerList"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <h2>客户详情</h2>
+                    <div id="customerDetail" class="muted">请先选择一个客户</div>
+
+                    <div id="detailActions" class="detail-actions" style="display:none;">
+                        <button id="editCustomerBtn" class="secondary" onclick="showEditCustomerForm()">修改客户详情</button>
+                        <button id="deleteCustomerBtn" class="danger" onclick="deleteSelectedCustomer()">删除客户</button>
+                    </div>
+
+                    <div id="editCustomerBox" class="edit-box">
+                        <div class="edit-title">修改客户信息</div>
+                        <input id="editName" placeholder="客户姓名">
+                        <input id="editCompany" placeholder="公司名称">
+                        <input id="editPhone" placeholder="电话">
+                        <input id="editEmail" placeholder="邮箱">
+                        <input id="editIndustry" placeholder="行业，例如：汽车电子 / 工业设备">
+
+                        <select id="editLevel">
+                            <option value="" disabled>客户等级</option>
+                            <option value="A">A 重点客户</option>
+                            <option value="B">B 普通客户</option>
+                            <option value="C">C 潜在客户</option>
+                        </select>
+
+                        <select id="editIntention">
+                            <option value="" disabled>意向程度</option>
+                            <option value="高">高</option>
+                            <option value="中">中</option>
+                            <option value="低">低</option>
+                        </select>
+
+                        <select id="editCooperationStatus">
+                            <option value="" disabled>合作状态</option>
+                            <option value="已合作">已合作</option>
+                            <option value="跟进洽谈">跟进洽谈</option>
+                            <option value="暂未合作">暂未合作</option>
+                        </select>
+
+                        <button onclick="updateCustomer()">保存修改</button>
+                        <button class="light" onclick="hideEditCustomerForm()">取消</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>新增跟进记录</h2>
+                    <textarea id="followupContent" placeholder="例如：今天电话沟通，客户对 10.25 寸车载显示屏感兴趣，希望了解价格和交期。"></textarea>
+                    <textarea id="nextAction" placeholder="下一步动作，例如：明天发送产品资料和初步报价。"></textarea>
+                    <button onclick="createFollowup()">保存跟进</button>
+                </div>
+
+                <div class="card">
+                    <h2>历史跟进记录</h2>
+                    <div id="followupList" class="muted">暂无记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 跟进分析模块 -->
+    <div id="pageAI" class="page-section">
+        <p class="page-intro">基于当前选中的客户资料和历史跟进记录，调用大模型生成客户总结和下一步销售建议。</p>
+
+        <div class="card">
+            <h2>当前分析客户</h2>
+            <div id="currentCustomerBox" class="current-customer muted">暂未选择客户。可以在下方直接选择一个客户。</div>
+
+            <div style="margin-top:12px;">
+                <select id="aiCustomerSelect">
+                    <option value="" disabled selected>请选择要分析的客户</option>
+                </select>
+                <button onclick="switchCustomerFromAI()">切换为当前客户</button>
+            </div>
+
+            <div class="muted" style="margin-top:8px;">
+                选择客户后，AI 会基于该客户的基础资料和历史跟进记录生成分析结果。
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>AI 分析</h2>
+            <button onclick="aiSummary()">AI 总结跟进记录</button>
+            <button class="secondary" onclick="aiSuggestion()">AI 生成下一步建议</button>
+            <div id="aiResult" class="result">AI 结果会显示在这里</div>
+        </div>
+    </div>
+
+    <!-- RAG 知识库问答模块 -->
+    <div id="pageRAG" class="page-section">
+        <p class="page-intro">上传产品资料或行业资料后，系统会先检索相关资料片段，再调用大模型生成回答，并展示参考资料来源。</p>
+
+        <div class="grid-even">
+            <div>
+                <div class="card">
+                    <h2>知识库资料</h2>
+                    <input id="ragFile" type="file" accept=".pdf,.txt,.md,.csv" multiple>
+                    <button class="green" onclick="uploadRagFile()">上传资料</button>
+                    <button class="danger" onclick="clearRagDocuments()">清空全部资料</button>
+                    <div class="muted">支持 PDF、TXT、MD、CSV，可一次选择多个文件。适合上传产品手册、参数说明、行业资料。</div>
+                    <div id="ragDocumentList" style="margin-top:10px;"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <h2>RAG 产品资料问答</h2>
+                    <textarea id="ragQuestion" placeholder="例如：客户做车载中控屏，应该推荐哪些显示方案？需要追问哪些参数？"></textarea>
+                    <button class="green" onclick="askRag()">基于资料回答</button>
+                    <div id="ragResult" class="result">上传资料后，可以在这里提问。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedCustomerId = null;
+let selectedCustomerData = null;
+
+function showPage(name) {
+    const pages = {
+        customer: "pageCustomer",
+        ai: "pageAI",
+        rag: "pageRAG"
+    };
+    const tabs = {
+        customer: "tabCustomer",
+        ai: "tabAI",
+        rag: "tabRAG"
+    };
+
+    Object.values(pages).forEach(id => {
+        document.getElementById(id).classList.remove("active");
+    });
+    Object.values(tabs).forEach(id => {
+        document.getElementById(id).classList.remove("active");
+    });
+
+    document.getElementById(pages[name]).classList.add("active");
+    document.getElementById(tabs[name]).classList.add("active");
+}
+
+function escapeHtml(text) {
+    return String(text || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function formatInlineMarkdown(text) {
+    let safe = escapeHtml(text);
+    safe = safe.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    safe = safe.replace(/__(.*?)__/g, "<strong>$1</strong>");
+    return safe;
+}
+
+function renderAIText(text) {
+    if (!text) {
+        return "暂无 AI 结果";
+    }
+
+    const lines = text.replace(/\r\n/g, "\n").split("\n");
+    return lines.map(line => {
+        let raw = line.trim();
+
+        if (!raw) {
+            return '<div class="ai-space"></div>';
+        }
+
+        raw = raw.replace(/^#{1,6}\s*/, "");
+
+        if (/^[-*]\s+/.test(raw)) {
+            raw = raw.replace(/^[-*]\s+/, "");
+            return `<div class="ai-list">${formatInlineMarkdown(raw)}</div>`;
+        }
+
+        if (/^\d+\.\s+/.test(raw)) {
+            return `<div class="ai-line">${formatInlineMarkdown(raw)}</div>`;
+        }
+
+        if (
+            raw.includes("总结") ||
+            raw.includes("当前阶段") ||
+            raw.includes("客户需求") ||
+            raw.includes("风险") ||
+            raw.includes("建议") ||
+            raw.includes("话术") ||
+            raw.includes("优先级") ||
+            raw.includes("行动") ||
+            raw.includes("资料") ||
+            raw.includes("产品")
+        ) {
+            if (raw.length <= 35) {
+                return `<div class="ai-title">${formatInlineMarkdown(raw)}</div>`;
+            }
+        }
+
+        return `<div class="ai-line">${formatInlineMarkdown(raw)}</div>`;
+    }).join("");
+}
+
+async function request(url, options = {}) {
+    const res = await fetch(url, {
+        headers: {"Content-Type": "application/json"},
+        ...options
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        alert(err.detail || "请求失败");
+        throw new Error(err.detail || "请求失败");
+    }
+    return res.json();
+}
+
+async function createCustomer() {
+    const data = {
+        name: document.getElementById("name").value,
+        company: document.getElementById("company").value,
+        phone: document.getElementById("phone").value,
+        email: document.getElementById("email").value,
+        industry: document.getElementById("industry").value,
+        level: document.getElementById("level").value,
+        intention: document.getElementById("intention").value,
+        cooperation_status: document.getElementById("cooperationStatus").value
+    };
+
+    if (!data.name || !data.company) {
+        alert("客户姓名和公司名称必填");
+        return;
+    }
+
+    await request("/customers", {
+        method: "POST",
+        body: JSON.stringify(data)
+    });
+
+    document.getElementById("name").value = "";
+    document.getElementById("company").value = "";
+    document.getElementById("phone").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("industry").value = "";
+    document.getElementById("level").value = "";
+    document.getElementById("intention").value = "";
+    document.getElementById("cooperationStatus").value = "";
+
+    loadCustomers();
+}
+
+async function loadCustomers() {
+    const customers = await request("/customers");
+    const box = document.getElementById("customerList");
+    const aiSelect = document.getElementById("aiCustomerSelect");
+
+    if (customers.length === 0) {
+        box.innerHTML = '<div class="muted">暂无客户，请先新增一个客户。</div>';
+        if (aiSelect) {
+            aiSelect.innerHTML = '<option value="" disabled selected>暂无客户，请先新增客户</option>';
+        }
+        return;
+    }
+
+    box.innerHTML = customers.map(c => `
+        <div class="customer-item" onclick="selectCustomer(${c.id})">
+            <div>
+                <b>${escapeHtml(c.name)}</b>
+                <span class="tag">${escapeHtml(c.intention || "未设置意向")}</span>
+                <span class="status-tag">${escapeHtml(c.cooperation_status || "未设置状态")}</span>
+            </div>
+            <div class="muted">${escapeHtml(c.company)}</div>
+            <div class="muted">${escapeHtml(c.industry || "未知行业")} · ${escapeHtml(c.level || "未分级")}</div>
+        </div>
+    `).join("");
+
+    if (aiSelect) {
+        aiSelect.innerHTML = '<option value="" disabled selected>请选择要分析的客户</option>' + customers.map(c => `
+            <option value="${c.id}">${escapeHtml(c.name)}｜${escapeHtml(c.company)}｜${escapeHtml(c.intention || "未设置意向")}</option>
+        `).join("");
+
+        if (selectedCustomerId) {
+            aiSelect.value = String(selectedCustomerId);
+        }
+    }
+}
+
+async function selectCustomer(id) {
+    selectedCustomerId = id;
+    const c = await request(`/customers/${id}`);
+    selectedCustomerData = c;
+
+    document.getElementById("customerDetail").innerHTML = `
+        <b>${escapeHtml(c.name)}</b>
+        <span class="tag">${escapeHtml(c.level || "未分级")}</span>
+        <span class="status-tag">${escapeHtml(c.cooperation_status || "未设置状态")}</span>
+        <p>公司：${escapeHtml(c.company)}</p>
+        <p>电话：${escapeHtml(c.phone || "未填写")}</p>
+        <p>邮箱：${escapeHtml(c.email || "未填写")}</p>
+        <p>行业：${escapeHtml(c.industry || "未知")}</p>
+        <p>意向：${escapeHtml(c.intention || "未设置")}</p>
+        <p>合作状态：${escapeHtml(c.cooperation_status || "未设置")}</p>
+    `;
+
+    document.getElementById("detailActions").style.display = "block";
+    hideEditCustomerForm();
+
+    document.getElementById("aiResult").innerHTML = "AI 结果会显示在这里";
+    updateCurrentCustomerBox();
+
+    const aiSelect = document.getElementById("aiCustomerSelect");
+    if (aiSelect) {
+        aiSelect.value = String(id);
+    }
+
+    loadFollowups();
+}
+
+function updateCurrentCustomerBox() {
+    const box = document.getElementById("currentCustomerBox");
+    if (!selectedCustomerData) {
+        box.innerHTML = "暂未选择客户。可以在下方直接选择一个客户。";
+        return;
+    }
+
+    box.innerHTML = `
+        <b>${escapeHtml(selectedCustomerData.name)}</b>
+        <span class="tag">${escapeHtml(selectedCustomerData.intention || "未设置意向")}</span>
+        <span class="status-tag">${escapeHtml(selectedCustomerData.cooperation_status || "未设置状态")}</span>
+        <div class="muted" style="margin-top:6px;">
+            ${escapeHtml(selectedCustomerData.company)} · ${escapeHtml(selectedCustomerData.industry || "未知行业")}
+        </div>
+    `;
+}
+
+async function switchCustomerFromAI() {
+    const select = document.getElementById("aiCustomerSelect");
+    const id = select.value;
+
+    if (!id) {
+        alert("请先选择一个客户");
+        return;
+    }
+
+    await selectCustomer(Number(id));
+    document.getElementById("aiResult").innerHTML = "已切换客户，可以点击上方按钮生成 AI 分析。";
+}
+
+function clearSelectedCustomer() {
+    selectedCustomerId = null;
+    selectedCustomerData = null;
+    document.getElementById("customerDetail").innerHTML = "请先选择一个客户";
+    document.getElementById("customerDetail").className = "muted";
+    document.getElementById("detailActions").style.display = "none";
+    hideEditCustomerForm();
+    document.getElementById("followupList").innerHTML = '<div class="muted">暂无记录</div>';
+    document.getElementById("aiResult").innerHTML = "AI 结果会显示在这里";
+
+    const aiSelect = document.getElementById("aiCustomerSelect");
+    if (aiSelect) {
+        aiSelect.value = "";
+    }
+
+    updateCurrentCustomerBox();
+}
+
+async function deleteSelectedCustomer() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+
+    const ok = confirm("确定要删除这个客户吗？删除后，该客户的历史跟进记录也会一起删除。");
+    if (!ok) {
+        return;
+    }
+
+    await request(`/customers/${selectedCustomerId}`, {
+        method: "DELETE"
+    });
+
+    clearSelectedCustomer();
+    await loadCustomers();
+    alert("客户已删除");
+}
+
+function showEditCustomerForm() {
+    if (!selectedCustomerData) {
+        alert("请先选择客户");
+        return;
+    }
+
+    document.getElementById("editName").value = selectedCustomerData.name || "";
+    document.getElementById("editCompany").value = selectedCustomerData.company || "";
+    document.getElementById("editPhone").value = selectedCustomerData.phone || "";
+    document.getElementById("editEmail").value = selectedCustomerData.email || "";
+    document.getElementById("editIndustry").value = selectedCustomerData.industry || "";
+    document.getElementById("editLevel").value = selectedCustomerData.level || "";
+    document.getElementById("editIntention").value = selectedCustomerData.intention || "";
+    document.getElementById("editCooperationStatus").value = selectedCustomerData.cooperation_status || "";
+
+    document.getElementById("editCustomerBox").style.display = "block";
+}
+
+function hideEditCustomerForm() {
+    document.getElementById("editCustomerBox").style.display = "none";
+}
+
+async function updateCustomer() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+
+    const data = {
+        name: document.getElementById("editName").value,
+        company: document.getElementById("editCompany").value,
+        phone: document.getElementById("editPhone").value,
+        email: document.getElementById("editEmail").value,
+        industry: document.getElementById("editIndustry").value,
+        level: document.getElementById("editLevel").value,
+        intention: document.getElementById("editIntention").value,
+        cooperation_status: document.getElementById("editCooperationStatus").value
+    };
+
+    if (!data.name || !data.company) {
+        alert("客户姓名和公司名称不能为空");
+        return;
+    }
+
+    await request(`/customers/${selectedCustomerId}`, {
+        method: "PUT",
+        body: JSON.stringify(data)
+    });
+
+    alert("客户信息已修改");
+    hideEditCustomerForm();
+    await loadCustomers();
+    await selectCustomer(selectedCustomerId);
+}
+
+async function createFollowup() {
+    if (!selectedCustomerId) {
+        alert("请先选择客户");
+        return;
+    }
+
+    const data = {
+        content: document.getElementById("followupContent").value,
+        next_action: document.getElementById("nextAction").value
+    };
+
+    if (!data.content) {
+        alert("跟进内容不能为空");
+        return;
+    }
+
+    await request(`/customers/${selectedCustomerId}/followups`, {
+        method: "POST",
+        body: JSON.stringify(data)
+    });
+
+    document.getElementById("followupContent").value = "";
+    document.getElementById("nextAction").value = "";
+    loadFollowups();
+}
+
+async function loadFollowups() {
+    if (!selectedCustomerId) return;
+    const list = await request(`/customers/${selectedCustomerId}/followups`);
+    const box = document.getElementById("followupList");
+
+    if (list.length === 0) {
+        box.innerHTML = '<div class="muted">暂无跟进记录。</div>';
+        return;
+    }
+
+    box.innerHTML = list.map(f => `
+        <div class="customer-item">
+            <div>${escapeHtml(f.content)}</div>
+            <div class="muted">下一步：${escapeHtml(f.next_action || "暂无")}</div>
+            <div class="muted">时间：${new Date(f.created_at).toLocaleString()}</div>
+        </div>
+    `).join("");
+}
+
+async function aiSummary() {
+    if (!selectedCustomerId) {
+        alert("请先到客户管理中选择客户");
+        return;
+    }
+    document.getElementById("aiResult").innerHTML = "AI 正在分析中...";
+    const data = await request(`/customers/${selectedCustomerId}/ai/summary`, {method: "POST"});
+    document.getElementById("aiResult").innerHTML = renderAIText(data.result);
+}
+
+async function aiSuggestion() {
+    if (!selectedCustomerId) {
+        alert("请先到客户管理中选择客户");
+        return;
+    }
+    document.getElementById("aiResult").innerHTML = "AI 正在生成建议...";
+    const data = await request(`/customers/${selectedCustomerId}/ai/suggestion`, {method: "POST"});
+    document.getElementById("aiResult").innerHTML = renderAIText(data.result);
+}
+
+async function uploadRagFile() {
+    const fileInput = document.getElementById("ragFile");
+    const files = Array.from(fileInput.files);
+
+    if (!files.length) {
+        alert("请先选择资料文件");
+        return;
+    }
+
+    let successCount = 0;
+    let failedMessages = [];
+
+    for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await fetch("/rag/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                failedMessages.push(`${file.name}：${err.detail || "上传失败"}`);
+                continue;
+            }
+
+            await res.json();
+            successCount += 1;
+        } catch (error) {
+            failedMessages.push(`${file.name}：网络或服务异常`);
+        }
+    }
+
+    fileInput.value = "";
+    await loadRagDocuments();
+
+    let message = `上传完成：成功 ${successCount} 个，失败 ${failedMessages.length} 个。`;
+
+    if (failedMessages.length) {
+        message += "\n\n失败文件：\n" + failedMessages.join("\n");
+    }
+
+    alert(message);
+}
+
+async function loadRagDocuments() {
+    const docs = await request("/rag/documents");
+    const box = document.getElementById("ragDocumentList");
+
+    if (!docs.length) {
+        box.innerHTML = '<div class="muted">暂无资料，请先上传。</div>';
+        return;
+    }
+
+    box.innerHTML = docs.map(d => `
+        <div class="customer-item">
+            <b>${escapeHtml(d.filename)}</b>
+            <div class="muted">知识片段：${d.chunks} 个</div>
+            <button class="danger" onclick="deleteRagDocument('${encodeURIComponent(d.filename)}')">删除资料</button>
+        </div>
+    `).join("");
+}
+
+async function deleteRagDocument(encodedFilename) {
+    const filename = decodeURIComponent(encodedFilename);
+    const ok = confirm(`确定要删除资料“${filename}”吗？删除后，该资料不会再参与 RAG 检索。`);
+
+    if (!ok) {
+        return;
+    }
+
+    await request(`/rag/documents/${encodedFilename}`, {
+        method: "DELETE"
+    });
+
+    document.getElementById("ragResult").innerHTML = "资料已删除。请重新提问或上传新资料。";
+    await loadRagDocuments();
+    alert("资料已删除");
+}
+
+async function clearRagDocuments() {
+    const ok = confirm("确定要清空全部知识库资料吗？清空后，所有已上传资料都不会再参与 RAG 检索。");
+
+    if (!ok) {
+        return;
+    }
+
+    await request("/rag/documents", {
+        method: "DELETE"
+    });
+
+    document.getElementById("ragResult").innerHTML = "知识库已清空，请重新上传资料后再提问。";
+    await loadRagDocuments();
+    alert("知识库已清空");
+}
+
+async function askRag() {
+    const question = document.getElementById("ragQuestion").value.trim();
+    if (!question) {
+        alert("请输入问题");
+        return;
+    }
+
+    document.getElementById("ragResult").innerHTML = "正在检索知识库并生成回答...";
+
+    const data = await request("/rag/ask", {
+        method: "POST",
+        body: JSON.stringify({question})
+    });
+
+    let html = renderAIText(data.answer);
+
+    if (data.sources && data.sources.length) {
+        html += '<div class="source-box"><b>参考资料片段：</b>';
+        data.sources.forEach((s, index) => {
+            html += `
+                <div style="margin-top:8px;">
+                    <b>资料 ${index + 1}：</b>${escapeHtml(s.filename)}，片段 ${s.chunk_index}<br>
+                    <span class="muted">${escapeHtml(s.content)}...</span>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    document.getElementById("ragResult").innerHTML = html;
+}
+
+loadCustomers();
+loadRagDocuments();
+updateCurrentCustomerBox();
+</script>
+</body>
+</html>
