@@ -1,0 +1,4 @@
+# Local embedding model (sentence-transformers + BAAI/bge-m3 etc.)
+# Install: pip install -r requirements-embedding-local.txt
+# Note: installs PyTorch (~1.5 GB), first use downloads model (~2.2 GB)
+sentence-transformers>=3.0.0

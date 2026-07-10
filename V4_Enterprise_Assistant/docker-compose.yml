@@ -1,0 +1,15 @@
+services:
+  ai-customer-v4:
+    build: .
+    container_name: ai-customer-v4
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Docker 默认使用 API Embedding（无需下载本地模型 2.5GB）
+      # 如需本地模型，将 build 指向 Dockerfile.local 并改为 EMBEDDING_PROVIDER=local
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai_compatible}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

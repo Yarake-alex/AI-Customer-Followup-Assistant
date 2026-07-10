@@ -1,3 +1,5 @@
+data/
+
 .env
 .env.local
 .env.*.local
@@ -15,7 +17,10 @@ __pycache__/
 *.pyd
 
 .venv/
+.venv_test/
 venv/
+
+.claude/
 
 *.log
 

@@ -8,3 +8,8 @@ openai
 python-multipart
 pypdf
 scikit-learn
+# -- Optional dependencies (see requirements-*.txt) --
+# chromadb             -> requirements-vector.txt (SQLite vector search)
+# sentence-transformers -> requirements-embedding-local.txt (local embedding)
+# psycopg[binary]      -> requirements-db-pg.txt (PostgreSQL)
+# pgvector             -> requirements-db-pg.txt (PostgreSQL vector search)

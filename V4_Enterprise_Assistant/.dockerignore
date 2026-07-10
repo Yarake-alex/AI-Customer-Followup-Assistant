@@ -1,0 +1,28 @@
+# Sensitive files — keep out of Docker build context
+.git
+.env
+.env.local
+.env.*.local
+data
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+.venv
+.venv_test
+venv
+__pycache__
+.pytest_cache
+.claude
+uploads
+tmp
+temp
+*.log
+shangchuan
+
+# OS and tooling junk
+.DS_Store
+Thumbs.db
+.mypy_cache
+.ruff_cache

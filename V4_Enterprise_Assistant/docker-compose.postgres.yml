@@ -1,0 +1,48 @@
+# PostgreSQL + pgvector 生产部署 Compose 文件
+#
+# 使用方式:
+#   docker compose -f docker-compose.postgres.yml up -d --build
+#
+# 注意:
+#   - postgres 镜像已内置 pgvector 扩展，无需额外安装。
+#   - 向量检索默认关闭 (VECTOR_SEARCH_ENABLED=false)，如需开启请在 .env 中配置。
+#   - 首次启动会自动建表、补字段、补索引。
+#   - 生产环境务必修改 POSTGRES_PASSWORD 和 .env 中 SESSION_SECRET 等敏感值。
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    container_name: ai-customer-v4-postgres
+    environment:
+      POSTGRES_DB: ai_customer
+      POSTGRES_USER: ai_customer
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-postgres-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_customer -d ai_customer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  ai-customer-v4:
+    build: .
+    container_name: ai-customer-v4
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # 使用 postgres 服务名（容器网络内 DNS），不要写 localhost
+      DATABASE_URL: postgresql+psycopg://ai_customer:${POSTGRES_PASSWORD:-change-this-postgres-password}@postgres:5432/ai_customer
+      # PostgreSQL 模式下 pgvector 复用主库，无需 ChromaDB；Embedding 默认走 API
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai_compatible}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

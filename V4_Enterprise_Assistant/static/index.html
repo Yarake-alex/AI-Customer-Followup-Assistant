@@ -2,476 +2,1858 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 客户跟进助手 V4</title>
     <style>
-        body {
-            font-family: "Microsoft YaHei", Arial, sans-serif;
-            background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 50%, #faf5ff 100%);
-            margin: 0;
-            padding: 24px;
-            color: #1e293b;
+        /* ═══════════════════════════════════════════
+           CSS Variables
+           ═══════════════════════════════════════════ */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --primary-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --primary-gradient-2: linear-gradient(135deg, #4f46e5, #7c3aed);
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: rgba(255, 255, 255, 0.06);
+            --sidebar-active: rgba(99, 102, 241, 0.15);
+            --sidebar-width: 250px;
+            --header-height: 60px;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.10);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: 0.2s ease;
         }
-        .container {
-            max-width: 1160px;
+
+        /* ═══════════════════════════════════════════
+           Base / Reset
+           ═══════════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ═══════════════════════════════════════════
+           Login Page
+           ═══════════════════════════════════════════ */
+        #loginPage {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0c0a3e 0%, #1e1b4b 35%, #0f172a 65%, #0c0a3e 100%);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        #loginPage.hidden { display: none; }
+
+        /* Grid pattern overlay */
+        #loginPage::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+        }
+
+        /* Subtle static glow (mobile-safe, no animations or heavy blur) */
+        .login-glow {
+            position: fixed;
+            top: -30%;
+            right: -20%;
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .login-card {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            margin: 16px;
+            padding: 44px 32px 36px;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.40);
+            text-align: center;
+            z-index: 1;
+        }
+
+        /* Gradient top accent */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 20%;
+            right: 20%;
+            height: 3px;
+            background: var(--primary-gradient);
+            border-radius: 0 0 3px 3px;
+        }
+
+        .login-card .login-brand {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-light);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .login-card h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 4px;
+            letter-spacing: -0.02em;
+        }
+        .login-card h1 .title-highlight {
+            color: #a5b4fc;
+        }
+
+        .login-card .login-sub {
+            color: rgba(255, 255, 255, 0.50);
+            font-size: 14px;
+            margin: 4px 0 36px;
+            line-height: 1.6;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: inherit;
+            color: #fff;
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            text-align: center;
+        }
+        .login-card input::placeholder { color: rgba(255, 255, 255, 0.30); }
+        .login-card input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: var(--radius);
+            background: var(--primary-gradient);
+            color: #fff;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .login-card button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+        }
+        .login-card button:active { transform: translateY(0); }
+        .login-card button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-error {
+            color: #fca5a5;
+            font-size: 13px;
+            margin-bottom: 12px;
+            min-height: 20px;
+        }
+
+        /* ═══════════════════════════════════════════
+           Layout – Sidebar + Main
+           ═══════════════════════════════════════════ */
+        #mainApp {
+            display: flex;
+            min-height: 100vh;
+        }
+        #mainApp.hidden { display: none; }
+
+        /* ─── Sidebar ─── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .sidebar-logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #fff;
+        }
+        .sidebar-logo-text { line-height: 1.3; }
+        .sidebar-logo-text .brand {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            display: block;
+        }
+        .sidebar-logo-text .version {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--primary-light);
+            letter-spacing: 0.03em;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 10px;
+            overflow-y: auto;
+        }
+        .sidebar-nav-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 16px 12px 6px;
+        }
+
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 11px 14px;
+            margin: 2px 0;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.55);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all 0.15s ease;
+            text-align: left;
+            position: relative;
+        }
+        .sidebar-nav-item .nav-icon {
+            flex-shrink: 0;
+            opacity: 0.6;
+            transition: opacity 0.15s ease;
+        }
+        .sidebar-nav-item:hover {
+            background: var(--sidebar-hover);
+            color: rgba(255, 255, 255, 0.85);
+        }
+        .sidebar-nav-item:hover .nav-icon { opacity: 0.85; }
+        .sidebar-nav-item.active {
+            background: var(--sidebar-active);
+            color: #fff;
+        }
+        .sidebar-nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            border-radius: 0 3px 3px 0;
+            background: var(--primary-gradient);
+        }
+        .sidebar-nav-item.active .nav-icon { opacity: 1; }
+
+        .sidebar-footer {
+            padding: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 14px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.40);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.15s ease;
+        }
+        .sidebar-logout:hover {
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+        }
+
+        /* ─── Main Wrapper ─── */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ─── Top Header ─── */
+        .top-header {
+            height: var(--header-height);
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            box-shadow: var(--shadow-sm);
+        }
+        .top-header .page-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .hamburger:hover { background: var(--border-light); }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Sidebar backdrop (mobile) */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-backdrop.open {
+            opacity: 1;
+        }
+
+        /* ─── Content Area ─── */
+        .content-area {
+            flex: 1;
+            padding: 28px;
+            max-width: 1440px;
+            width: 100%;
             margin: 0 auto;
         }
-        .header {
+        .page-section { display: none; }
+        .page-section.active {
+            display: block;
+            animation: fadeSlideIn 0.25s ease;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ═══════════════════════════════════════════
+           Dashboard Stats
+           ═══════════════════════════════════════════ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .stat-card:nth-child(1)::before { background: var(--primary-gradient); }
+        .stat-card:nth-child(2)::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .stat-card:nth-child(3)::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .stat-card:nth-child(4)::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        .stat-card .stat-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .stat-card .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+        .stat-card .stat-icon {
+            position: absolute;
+            right: 18px;
+            top: 18px;
+            opacity: 0.10;
+        }
+        .stat-card .stat-icon svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Dashboard welcome */
+        .welcome-card {
+            background: var(--primary-gradient);
+            border-radius: var(--radius-lg);
+            padding: 32px 36px;
+            color: #fff;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.25);
+        }
+        .welcome-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .welcome-card p {
+            opacity: 0.80;
+            font-size: 14px;
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .quick-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            cursor: pointer;
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+        }
+        .quick-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+        }
+        .quick-card .qc-icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 12px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+        .quick-card .qc-icon.blue   { background: var(--primary-gradient); }
+        .quick-card .qc-icon.green  { background: linear-gradient(135deg, #10b981, #34d399); }
+        .quick-card .qc-icon.purple { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+        .quick-card .qc-icon.amber  { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+        .quick-card .qc-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .quick-card .qc-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ═══════════════════════════════════════════
+           CRM 3-Column Layout
+           ═══════════════════════════════════════════ */
+        .crm-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            gap: 16px;
+            align-items: start;
+        }
+        .crm-grid > div > .card:last-child { margin-bottom: 0; }
+
+        /* ═══════════════════════════════════════════
+           AI / RAG / Agent Grid
+           ═══════════════════════════════════════════ */
+        .ai-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .ai-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* ═══════════════════════════════════════════
+           Cards
+           ═══════════════════════════════════════════ */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: box-shadow var(--transition), border-color var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: #d0d7e2;
+        }
+        .card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            padding-bottom: 14px;
             margin-bottom: 16px;
+            border-bottom: 1.5px solid var(--border-light);
         }
-        h1 {
-            margin: 0;
-            font-size: 32px;
-        }
-        .version-tag {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #2563eb, #7c3aed);
-            color: #fff;
-            font-size: 13px;
-            margin-left: 8px;
-            vertical-align: middle;
-        }
-        .nav {
+        .card-header h2, .card h2:first-child {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
             display: flex;
-            gap: 10px;
-            margin-bottom: 18px;
-            background: #fff;
-            padding: 10px;
-            border-radius: 14px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.05);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-        }
-        .nav button {
-            flex: 1;
+            align-items: center;
+            gap: 8px;
             margin: 0;
-            background: #e5e7eb;
-            color: #111827;
+            padding: 0;
+            border: none;
+        }
+        .card-header .badge {
+            font-size: 11px;
             font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: var(--border-light);
+            color: var(--text-secondary);
         }
-        .nav button.active {
-            background: #2563eb;
-            color: #fff;
-        }
-        .page-section {
-            display: none;
-        }
-        .page-section.active {
-            display: block;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 20px;
-            align-items: start;
-        }
-        .grid-even {
-            display: grid;
-            grid-template-columns: 1fr 1.4fr;
-            gap: 20px;
-            align-items: start;
-        }
-        .card {
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(226, 232, 240, 0.7);
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.06);
-            margin-bottom: 18px;
-        }
+
+        /* ═══════════════════════════════════════════
+           Forms / Inputs / Buttons
+           ═══════════════════════════════════════════ */
         input, textarea, select {
             width: 100%;
-            box-sizing: border-box;
-            padding: 10px 12px;
-            margin: 7px 0;
-            border: 1px solid #ddd;
-            border-radius: 9px;
+            padding: 10px 14px;
+            margin: 4px 0 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
             font-size: 14px;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: var(--card-bg);
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            box-sizing: border-box;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.10);
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+        textarea {
+            min-height: 90px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
         }
         input[type="file"] {
-            background: #fff;
-        }
-        textarea {
-            min-height: 110px;
-            resize: vertical;
-        }
-        button {
-            border: none;
-            border-radius: 9px;
-            padding: 10px 14px;
-            margin: 6px 6px 6px 0;
+            padding: 10px;
+            border: 1.5px dashed var(--border);
+            border-radius: 10px;
             cursor: pointer;
-            background: #2563eb;
-            color: white;
+            background: #f8fafc;
+        }
+        input[type="file"]:hover {
+            border-color: var(--primary);
+            background: #f0f4ff;
+        }
+
+        /* Buttons */
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            margin: 4px 6px 4px 0;
+            cursor: pointer;
+            background: var(--primary);
+            color: #fff;
             font-size: 14px;
-        }
-        button.secondary {
-            background: #475569;
-        }
-        button.light {
-            background: #e5e7eb;
-            color: #111827;
-        }
-        button.danger {
-            background: #dc2626;
-        }
-        button.green {
-            background: #16a34a;
+            font-weight: 600;
+            font-family: inherit;
+            transition: all 0.15s ease;
+            line-height: 1.4;
         }
         button:hover {
-            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.30);
         }
-        .customer-item {
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            background: #fafafa;
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        button.secondary { background: #475569; }
+        button.secondary:hover { box-shadow: 0 4px 14px rgba(71, 85, 105, 0.30); }
+        button.light {
+            background: #f1f5f9;
+            color: var(--text-secondary);
         }
-        .customer-item:hover {
-            background: #eff6ff;
+        button.light:hover {
+            background: #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        .muted {
-            color: #777;
-            font-size: 13px;
+        button.danger { background: #ef4444; }
+        button.danger:hover {
+            background: #dc2626;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.30);
         }
-        .result {
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            padding: 16px;
-            border-radius: 10px;
-            margin-top: 10px;
-            line-height: 1.8;
-            font-size: 15px;
+        button.success, button.green { background: #10b981; }
+        button.success:hover, button.green:hover {
+            background: #059669;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.30);
         }
-        .ai-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 14px 0 8px;
-            color: #111827;
+        button.outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
         }
-        .ai-line {
-            margin: 6px 0;
+        button.outline:hover {
+            background: rgba(99, 102, 241, 0.06);
+            box-shadow: none;
         }
-        .ai-space {
-            height: 10px;
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
         }
-        .ai-list {
-            margin: 6px 0 6px 18px;
-        }
-        .ai-list::before {
-            content: "• ";
-            color: #2563eb;
-            font-weight: bold;
-        }
-        .result strong {
-            font-weight: 700;
-            color: #111827;
-        }
+        .btn-group button { margin: 0; }
+
+        /* ═══════════════════════════════════════════
+           Tags / Badges
+           ═══════════════════════════════════════════ */
         .tag {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 999px;
-            background: #e0e7ff;
-            color: #3730a3;
+            background: #eef2ff;
+            color: #4338ca;
             font-size: 12px;
-            margin-left: 6px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
         }
         .status-tag {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 999px;
-            background: #dcfce7;
-            color: #166534;
+            background: #ecfdf5;
+            color: #065f46;
             font-size: 12px;
-            margin-left: 6px;
+            font-weight: 600;
         }
         .hint-tag {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 999px;
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--border-light);
+            color: var(--text-secondary);
             font-size: 12px;
-            margin-left: 6px;
+            font-weight: 500;
         }
-        .edit-box {
-            display: none;
-            margin-top: 14px;
-            padding: 14px;
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-        }
-        .edit-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .detail-actions {
-            margin-top: 12px;
-        }
-        .source-box {
-            margin-top: 10px;
-            padding: 12px;
-            border-radius: 10px;
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
+        .muted {
+            color: var(--text-muted);
             font-size: 13px;
             line-height: 1.6;
         }
-        .current-customer {
-            padding: 12px;
-            border-radius: 12px;
+
+        /* ═══════════════════════════════════════════
+           Customer Items
+           ═══════════════════════════════════════════ */
+        .customer-item {
+            padding: 14px 16px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            cursor: pointer;
+            background: #fafbfc;
+            transition: all 0.15s ease;
+        }
+        .customer-item:hover {
             background: #eff6ff;
-            border: 1px solid #bfdbfe;
+            border-color: #bfdbfe;
+        }
+        .customer-item.selected {
+            background: #eff6ff;
+            border-color: var(--primary);
+            border-left: 3px solid var(--primary);
+        }
+        .customer-item b {
+            color: var(--text-primary);
+            font-size: 15px;
+        }
+
+        /* ─── Customer Detail ─── */
+        #customerDetail p {
+            margin: 6px 0;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        #customerDetail b { font-size: 17px; }
+
+        .current-customer {
+            padding: 16px;
+            border-radius: var(--radius);
+            background: #eff6ff;
+            border: 1.5px solid #bfdbfe;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .detail-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .detail-actions button { flex: 1; min-width: 120px; }
+
+        .edit-box {
+            display: none;
+            margin-top: 16px;
+            padding: 20px;
+            background: #fafbfc;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .edit-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
             margin-bottom: 12px;
         }
+
+        /* ─── Page intro ─── */
         .page-intro {
-            color: #64748b;
-            margin: 0 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
             line-height: 1.7;
+            margin-bottom: 24px;
+            padding: 14px 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
-        @media (max-width: 900px) {
-            .grid, .grid-even {
+        .page-intro .intro-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            flex-shrink: 0;
+        }
+
+        /* ═══════════════════════════════════════════
+           Result / AI Output
+           ═══════════════════════════════════════════ */
+        .result {
+            background: #f8fafc;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 12px;
+            line-height: 1.8;
+            font-size: 14px;
+            color: var(--text-primary);
+            min-height: 60px;
+        }
+        .result strong { font-weight: 700; color: var(--text-primary); }
+
+        .result-empty {
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            text-align: center;
+        }
+
+        .result-loading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            padding: 8px 0;
+        }
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2.5px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .ai-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 16px 0 8px;
+            color: var(--text-primary);
+            padding-left: 12px;
+            border-left: 3px solid var(--primary);
+        }
+        .ai-line { margin: 6px 0; padding-left: 4px; }
+        .ai-space { height: 8px; }
+        .ai-list {
+            margin: 6px 0 6px 20px;
+            padding-left: 4px;
+            position: relative;
+        }
+        .ai-list::before {
+            content: "• ";
+            color: var(--primary);
+            font-weight: bold;
+            position: absolute;
+            left: -14px;
+        }
+
+        .source-box {
+            margin-top: 12px;
+            padding: 16px;
+            border-radius: var(--radius);
+            background: #fff7ed;
+            border: 1.5px solid #fed7aa;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #7c2d12;
+        }
+        .source-box b { color: #9a3412; }
+
+        /* ─── Empty state ─── */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+        }
+        .empty-state .empty-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+        .empty-state p { font-size: 13px; }
+
+        /* ─── Step timeline ─── */
+        .step-timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+        .step-item {
+            position: relative;
+            padding: 0 0 16px 16px;
+            border-left: 2px solid var(--border);
+        }
+        .step-item:last-child { border-left-color: transparent; }
+        .step-item::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+        .step-item .step-num {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* ─── Scrollbar ─── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ─── Modal ─── */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 9000;
+            display: flex; align-items: flex-start; justify-content: center;
+            padding-top: 60px;
+        }
+        .modal-box {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            padding: 24px;
+            width: 100%;
+            animation: modalIn 0.2s ease;
+        }
+        @keyframes modalIn {
+            from { opacity:0; transform: translateY(-30px); }
+            to { opacity:1; transform: translateY(0); }
+        }
+
+        /* ═══════════════════════════════════════════
+           Responsive
+           ═══════════════════════════════════════════ */
+
+        /* Tablet & below: collapse sidebar */
+        @media (max-width: 1024px) {
+            .crm-grid {
                 grid-template-columns: 1fr;
             }
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
-            .nav {
-                flex-direction: column;
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-backdrop { display: block; pointer-events: none; }
+            .sidebar-backdrop.open { pointer-events: auto; }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+            .top-header {
+                display: grid;
+                grid-template-columns: 44px 1fr 44px;
+                align-items: center;
+                padding: 0 12px;
+                gap: 0;
+            }
+            .hamburger {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .top-header .page-title {
+                text-align: center;
+                font-size: 16px;
+            }
+            .header-actions {
+                justify-self: end;
+            }
+            .content-area {
+                padding: 20px 16px;
+            }
+            .ai-grid {
+                grid-template-columns: 1fr;
+            }
+            .welcome-card {
+                padding: 24px 20px;
+            }
+            .welcome-card h2 {
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .stat-card .stat-value {
+                font-size: 24px;
+            }
+            .stat-card {
+                padding: 16px 18px;
+            }
+            .crm-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .card {
+                padding: 18px;
+                margin-bottom: 14px;
+            }
+            .content-area {
+                padding: 14px 12px;
+            }
+            .login-card {
+                padding: 32px 24px 28px;
+                margin: 12px;
+                width: calc(100% - 24px);
+            }
+            .login-card h1 {
+                font-size: 22px;
+            }
+            .login-card .login-sub {
+                font-size: 13px;
+                margin-bottom: 24px;
+            }
+            .login-card input {
+                font-size: 16px;
+                padding: 14px 16px;
+            }
+            .login-card button {
+                font-size: 16px;
+                padding: 14px;
+            }
+            .login-card .login-brand {
+                font-size: 12px;
+            }
+            button {
+                padding: 9px 14px;
+                font-size: 13px;
+                width: 100%;
+            }
+            .detail-actions { flex-direction: column; }
+            .detail-actions button { width: 100%; }
+            .top-header .page-title {
+                font-size: 16px;
+            }
+            .quick-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .login-card {
+                padding: 28px 20px 24px;
+                margin: 10px;
+                width: calc(100% - 20px);
+                border-radius: 16px;
+            }
+            .login-card h1 {
+                font-size: 20px;
+            }
+            .login-card .login-sub {
+                font-size: 12px;
+                margin-bottom: 20px;
+            }
+            .login-card input {
+                font-size: 16px;
+                padding: 12px 14px;
+                margin-bottom: 12px;
+            }
+            .login-card button {
+                font-size: 16px;
+                padding: 13px;
+            }
+            .login-card .login-brand {
+                font-size: 11px;
+                margin-bottom: 8px;
             }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <h1>AI 客户跟进助手 V4 <span class="version-tag">企业增强版</span></h1>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <input id="adminKeyInput" type="password" placeholder="管理密钥" style="width:140px;margin:0;padding:6px 10px;">
-            <button id="saveAdminKeyBtn" style="margin:0;padding:6px 12px;" onclick="saveAdminKey()">保存密钥</button>
+
+<!-- ════════════════════════════════════
+     Login Page
+     ════════════════════════════════════ -->
+<div id="loginPage">
+    <div class="login-glow"></div>
+    <div class="login-card">
+        <div class="login-brand">Enterprise Edition</div>
+        <h1>AI 客户跟进助手 <span class="title-highlight">V4</span></h1>
+        <p class="login-sub">企业增强版 · RAG 知识库 · Agent 跟进分析<br>请输入账号和密码以进入系统</p>
+        <input id="loginUsername" type="text" placeholder="用户名" autocomplete="username">
+        <input id="loginPassword" type="password" placeholder="访问密码" autocomplete="off">
+        <div id="loginError" class="login-error"></div>
+        <button id="loginBtn" onclick="handleLogin()">登 录</button>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════
+     Main App
+     ════════════════════════════════════ -->
+<div id="mainApp" class="hidden">
+
+    <!-- ─── Sidebar ─── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a4 4 0 0 1 4 4c0 2-2 3-2 5h-4c0-2-2-3-2-5a4 4 0 0 1 4-4z"/>
+                    <path d="M12 12v4"/><path d="M10 22h4"/>
+                </svg>
+            </div>
+            <div class="sidebar-logo-text">
+                <span class="brand">AI 客户跟进助手</span>
+                <span class="version">V4 企业增强版</span>
+            </div>
         </div>
-    </div>
 
-    <div class="nav">
-        <button id="tabCustomer" class="active" onclick="showPage('customer')">客户管理</button>
-        <button id="tabAI" onclick="showPage('ai')">AI 跟进分析</button>
-        <button id="tabRAG" onclick="showPage('rag')">RAG 知识库问答</button>
-        <button id="tabAgent" onclick="showPage('agent')">Agent 跟进助手</button>
-    </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-nav-label">主菜单</div>
 
-    <!-- 客户管理模块 -->
-    <div id="pageCustomer" class="page-section active">
-        <p class="page-intro">用于维护客户资料、客户状态和跟进记录，是 V4 的客户数据管理与跟进记录基础层。</p>
+            <button id="tabDashboard" class="sidebar-nav-item active" onclick="showPage('dashboard')">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                <span>数据概览</span>
+            </button>
 
-        <div class="grid">
-            <div>
-                <div class="card">
-                    <h2>新增客户</h2>
-                    <input id="name" placeholder="客户姓名，例如：张经理">
-                    <input id="company" placeholder="公司名称，例如：某某科技有限公司">
-                    <input id="phone" placeholder="电话">
-                    <input id="email" placeholder="邮箱">
-                    <input id="industry" placeholder="行业，例如：汽车电子 / 工业设备">
-                    <select id="level">
-                        <option value="" disabled selected>客户等级</option>
-                        <option value="A">A 重点客户</option>
-                        <option value="B">B 普通客户</option>
-                        <option value="C">C 潜在客户</option>
-                    </select>
-                    <select id="intention">
-                        <option value="" disabled selected>意向程度</option>
-                        <option value="高">高</option>
-                        <option value="中">中</option>
-                        <option value="低">低</option>
-                    </select>
-                    <select id="cooperationStatus">
-                        <option value="" disabled selected>合作状态</option>
-                        <option value="已合作">已合作</option>
-                        <option value="跟进洽谈">跟进洽谈</option>
-                        <option value="暂未合作">暂未合作</option>
-                    </select>
-                    <button onclick="createCustomer()">保存客户</button>
+            <button id="tabCustomer" class="sidebar-nav-item" onclick="showPage('customer')">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>客户管理</span>
+            </button>
+
+            <button id="tabAI" class="sidebar-nav-item" onclick="showPage('ai')">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                    <path d="M18 16l-1 2.5-2.5 1 2.5 1 1 2.5 1-2.5 2.5-1-2.5-1-1-2.5z"/>
+                    <path d="M6 13l-1 2-2 1 2 1 1 2 1-2 2-1-2-1-1-2z"/>
+                </svg>
+                <span>AI 跟进分析</span>
+            </button>
+
+            <button id="tabRAG" class="sidebar-nav-item" onclick="showPage('rag')">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span>RAG 知识库</span>
+            </button>
+
+            <button id="tabDue" class="sidebar-nav-item" onclick="showPage('due')">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>待跟进客户</span>
+            </button>
+
+            <button id="tabAgent" class="sidebar-nav-item" onclick="showPage('agent')">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="10" rx="2"/>
+                    <circle cx="12" cy="16" r="2"/>
+                    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                </svg>
+                <span>Agent 助手</span>
+            </button>
+
+            <button id="tabAdmin" class="sidebar-nav-item" onclick="showPage('admin')" style="display:none;">
+                <svg class="nav-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>用户管理</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="sidebar-logout" id="changePasswordBtn" onclick="showChangePassword()" style="margin-bottom:2px;color:rgba(255,255,255,0.55);">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>修改密码</span>
+            </button>
+            <button class="sidebar-logout" id="logoutBtn" onclick="handleLogout()">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>退出登录</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Sidebar backdrop (mobile) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+    <!-- ─── Main Wrapper ─── -->
+    <div class="main-wrapper">
+
+        <!-- ─── Top Header ─── -->
+        <header class="top-header">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="切换菜单">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <h2 class="page-title" id="pageTitle">数据概览</h2>
+            <div class="header-actions"></div>
+        </header>
+
+        <!-- ─── Content Area ─── -->
+        <main class="content-area">
+
+            <!-- ════════════════════════════════════
+                 Dashboard Page
+                 ════════════════════════════════════ -->
+            <div id="pageDashboard" class="page-section active">
+
+                <div class="welcome-card">
+                    <h2>欢迎使用 AI 客户跟进助手 V4</h2>
+                    <p>企业级 ToB 销售管理平台 · 集成客户管理、AI 分析、RAG 知识库与 Agent 智能跟进</p>
                 </div>
 
-                <div class="card">
-                    <h2>客户列表</h2>
-                    <div id="customerList"></div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="stat-label">客户总数</div>
+                        <div class="stat-value" id="statTotalCustomers">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div class="stat-label">已合作客户</div>
+                        <div class="stat-value" id="statCooperating">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div class="stat-label">跟进中客户</div>
+                        <div class="stat-value" id="statFollowing">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <div class="stat-label">知识库文档</div>
+                        <div class="stat-value" id="statDocuments">0</div>
+                    </div>
+                </div>
+
+                <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:14px;">快速入口</h3>
+                <div class="quick-grid">
+                    <div class="quick-card" onclick="showPage('customer')">
+                        <div class="qc-icon blue">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="qc-title">客户管理</div>
+                        <div class="qc-desc">维护客户资料与跟进记录</div>
+                    </div>
+                    <div class="quick-card" onclick="showPage('ai')">
+                        <div class="qc-icon purple">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+                        </div>
+                        <div class="qc-title">AI 跟进分析</div>
+                        <div class="qc-desc">生成客户总结与销售建议</div>
+                    </div>
+                    <div class="quick-card" onclick="showPage('rag')">
+                        <div class="qc-icon green">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <div class="qc-title">RAG 知识库</div>
+                        <div class="qc-desc">上传资料并基于资料问答</div>
+                    </div>
+                    <div class="quick-card" onclick="showPage('agent')">
+                        <div class="qc-icon amber">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="16" r="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                        </div>
+                        <div class="qc-title">Agent 助手</div>
+                        <div class="qc-desc">自动生成客户跟进方案</div>
+                    </div>
                 </div>
             </div>
 
-            <div>
-                <div class="card">
-                    <h2>客户详情</h2>
-                    <div id="customerDetail" class="muted">请先选择一个客户</div>
+            <!-- ════════════════════════════════════
+                 Customer Management Page
+                 ════════════════════════════════════ -->
+            <div id="pageCustomer" class="page-section">
+                <!-- ── Top Action Bar ── -->
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                    <h2 style="margin:0;font-size:18px;">客户管理</h2>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button onclick="openCustomerModal()">＋ 新增客户</button>
+                        <button class="light" onclick="importCsvDialog()">📥 导入 CSV</button>
+                        <button class="light" onclick="exportCustomers()">📤 导出客户</button>
+                        <button class="light" onclick="exportFollowups()">📤 导出跟进</button>
+                    </div>
+                </div>
+                <input id="importCsvFile" type="file" accept=".csv" style="display:none;" onchange="handleImportCsv(event)">
 
-                    <div id="detailActions" class="detail-actions" style="display:none;">
-                        <button id="editCustomerBtn" class="secondary" onclick="showEditCustomerForm()">修改客户详情</button>
-                        <button id="deleteCustomerBtn" class="danger" onclick="deleteSelectedCustomer()">删除客户</button>
+                <!-- ── Three-Column Layout ── -->
+                <div class="crm-grid">
+                    <!-- Left: Customer List 320px -->
+                    <div>
+                        <div class="card" style="padding:16px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                                <span style="font-weight:700;font-size:15px;">客户列表</span>
+                                <span class="badge" id="customerCountBadge">0</span>
+                            </div>
+                            <input id="searchQ" placeholder="搜索姓名、公司、电话、邮箱…" oninput="searchCustomers()">
+                            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">
+                                <select id="filterLevel" onchange="searchCustomers()" style="flex:1;min-width:70px;font-size:11px;padding:6px 4px;margin:2px 0;">
+                                    <option value="">等级</option>
+                                    <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                                </select>
+                                <select id="filterIntention" onchange="searchCustomers()" style="flex:1;min-width:70px;font-size:11px;padding:6px 4px;margin:2px 0;">
+                                    <option value="">意向</option>
+                                    <option value="高">高</option><option value="中">中</option><option value="低">低</option>
+                                </select>
+                                <select id="filterCooperationStatus" onchange="searchCustomers()" style="flex:1;min-width:80px;font-size:11px;padding:6px 4px;margin:2px 0;">
+                                    <option value="">合作</option>
+                                    <option value="已合作">已合作</option><option value="跟进洽谈">洽谈</option><option value="暂未合作">未合作</option>
+                                </select>
+                                <select id="filterFollowupStatus" onchange="searchCustomers()" style="flex:1;min-width:70px;font-size:11px;padding:6px 4px;margin:2px 0;">
+                                    <option value="">跟进</option>
+                                    <option value="待跟进">待跟进</option><option value="已跟进">已跟进</option><option value="逾期">逾期</option>
+                                    <option value="暂停">暂停</option><option value="成交">成交</option><option value="流失">流失</option>
+                                </select>
+                                <input id="filterSource" placeholder="来源" oninput="searchCustomers()" style="flex:1;min-width:60px;font-size:11px;padding:6px 4px;margin:2px 0;">
+                            </div>
+                            <div style="display:flex;gap:6px;margin-bottom:8px;">
+                                <button class="light" onclick="resetSearch()" style="font-size:11px;padding:4px 8px;">重置</button>
+                                <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">
+                                    <input type="checkbox" id="filterDueOnly" onchange="searchCustomers()" style="width:auto;margin:0;">待跟进
+                                </label>
+                            </div>
+                            <div id="customerList" style="max-height:52vh;overflow-y:auto;"></div>
+                            <div id="customerPagination" style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:12px;color:var(--text-secondary);"></div>
+                        </div>
                     </div>
 
-                    <div id="editCustomerBox" class="edit-box">
-                        <div class="edit-title">修改客户信息</div>
-                        <input id="editName" placeholder="客户姓名">
-                        <input id="editCompany" placeholder="公司名称">
-                        <input id="editPhone" placeholder="电话">
-                        <input id="editEmail" placeholder="邮箱">
-                        <input id="editIndustry" placeholder="行业，例如：汽车电子 / 工业设备">
+                    <!-- Center: Customer Detail 1fr -->
+                    <div>
+                        <div class="card" style="padding:20px;">
+                            <div id="customerDetail" class="muted" style="text-align:center;padding:40px 0;">
+                                <div style="font-size:40px;margin-bottom:12px;">👤</div>
+                                <div>请选择一个客户以查看详情</div>
+                            </div>
+                            <div id="detailActions" class="detail-actions" style="display:none;">
+                                <button onclick="openCustomerModal(true)">✏️ 编辑客户</button>
+                                <button class="danger" onclick="deleteSelectedCustomer()">🗑 删除客户</button>
+                                <button class="secondary" onclick="aiSummary()" style="flex:1 0 45%;">🤖 AI 总结</button>
+                                <button class="secondary" onclick="aiSuggestion()" style="flex:1 0 45%;">💡 AI 建议</button>
+                            </div>
+                        </div>
+                    </div>
 
-                        <select id="editLevel">
-                            <option value="" disabled>客户等级</option>
-                            <option value="A">A 重点客户</option>
-                            <option value="B">B 普通客户</option>
-                            <option value="C">C 潜在客户</option>
-                        </select>
-
-                        <select id="editIntention">
-                            <option value="" disabled>意向程度</option>
-                            <option value="高">高</option>
-                            <option value="中">中</option>
-                            <option value="低">低</option>
-                        </select>
-
-                        <select id="editCooperationStatus">
-                            <option value="" disabled>合作状态</option>
-                            <option value="已合作">已合作</option>
-                            <option value="跟进洽谈">跟进洽谈</option>
-                            <option value="暂未合作">暂未合作</option>
-                        </select>
-
-                        <button onclick="updateCustomer()">保存修改</button>
-                        <button class="light" onclick="hideEditCustomerForm()">取消</button>
+                    <!-- Right: Follow-up Panel 360px -->
+                    <div>
+                        <div class="card" style="padding:16px;">
+                            <div style="font-weight:700;font-size:15px;margin-bottom:10px;">新增跟进记录</div>
+                            <div id="followupPanelHint" class="muted" style="text-align:center;padding:24px 0;font-size:13px;">选择客户后可记录跟进</div>
+                            <div id="followupPanelForm" style="display:none;">
+                                <textarea id="followupContent" placeholder="跟进内容…"></textarea>
+                                <textarea id="nextAction" placeholder="下一步动作…"></textarea>
+                                <input id="followupNextFollowupAt" type="datetime-local" placeholder="下次跟进时间（可选）">
+                                <select id="followupFollowupStatus">
+                                    <option value="">不修改跟进状态</option>
+                                    <option value="待跟进">待跟进</option><option value="已跟进">已跟进</option>
+                                    <option value="逾期">逾期</option><option value="暂停">暂停</option>
+                                    <option value="成交">成交</option><option value="流失">流失</option>
+                                </select>
+                                <button onclick="createFollowup()" style="width:100%;">保存跟进</button>
+                            </div>
+                        </div>
+                        <div class="card" style="padding:16px;margin-top:12px;">
+                            <div style="font-weight:700;font-size:15px;margin-bottom:10px;">历史跟进记录</div>
+                            <div id="followupList" class="muted" style="text-align:center;padding:12px 0;font-size:13px;">暂无记录</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <h2>新增跟进记录</h2>
-                    <textarea id="followupContent" placeholder="例如：今天电话沟通，客户对 10.25 寸车载显示屏感兴趣，希望了解价格和交期。"></textarea>
-                    <textarea id="nextAction" placeholder="下一步动作，例如：明天发送产品资料和初步报价。"></textarea>
-                    <button onclick="createFollowup()">保存跟进</button>
+                <!-- ── Customer Modal (add/edit) ── -->
+                <div id="customerModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeCustomerModal()">
+                    <div class="modal-box" style="max-width:600px;max-height:85vh;overflow-y:auto;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                            <h3 id="customerModalTitle" style="margin:0;">新增客户</h3>
+                            <button class="light" onclick="closeCustomerModal()" style="padding:4px 10px;">✕</button>
+                        </div>
+                        <input id="name" placeholder="客户姓名 *">
+                        <input id="company" placeholder="公司名称 *">
+                        <input id="phone" placeholder="电话">
+                        <input id="email" placeholder="邮箱">
+                        <input id="industry" placeholder="行业，例如：汽车电子">
+                        <div style="display:flex;gap:8px;">
+                            <select id="level" style="flex:1;"><option value="">客户等级</option><option value="A">A 重点</option><option value="B">B 普通</option><option value="C">C 潜在</option></select>
+                            <select id="intention" style="flex:1;"><option value="">意向程度</option><option value="高">高</option><option value="中">中</option><option value="低">低</option></select>
+                        </div>
+                        <select id="cooperationStatus"><option value="">合作状态</option><option value="已合作">已合作</option><option value="跟进洽谈">跟进洽谈</option><option value="暂未合作">暂未合作</option></select>
+                        <input id="source" placeholder="客户来源，例如：展会 / 转介绍">
+                        <textarea id="remark" placeholder="销售备注" style="min-height:60px;"></textarea>
+                        <input id="nextFollowupAt" type="datetime-local" placeholder="下次跟进时间">
+                        <select id="followupStatus"><option value="">跟进状态</option><option value="待跟进">待跟进</option><option value="已跟进">已跟进</option><option value="逾期">逾期</option><option value="暂停">暂停</option><option value="成交">成交</option><option value="流失">流失</option></select>
+                        <input type="hidden" id="editCustomerId" value="">
+                        <div style="display:flex;gap:8px;margin-top:8px;">
+                            <button onclick="saveCustomerFromModal()" style="flex:1;">保存</button>
+                            <button class="light" onclick="closeCustomerModal()" style="flex:1;">取消</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+                 AI 跟进分析 Page
+                 ════════════════════════════════════ -->
+            <div id="pageAI" class="page-section">
+                <div class="page-intro">
+                    <span class="intro-dot"></span>
+                    基于当前选中的客户资料和历史跟进记录，调用大模型生成客户总结和下一步销售建议。
+                </div>
+
+                <div class="ai-grid">
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>选择分析客户</h2>
+                            </div>
+                            <div id="currentCustomerBox" class="current-customer muted" style="margin-bottom:14px;">暂未选择客户。可以在下方直接选择一个客户。</div>
+                            <select id="aiCustomerSelect">
+                                <option value="" disabled selected>请选择要分析的客户</option>
+                            </select>
+                            <div class="btn-group" style="margin-top:10px;">
+                                <button onclick="switchCustomerFromAI()" class="outline">设为当前客户</button>
+                            </div>
+                            <div class="muted" style="margin-top:12px;">
+                                选择客户后，AI 会基于该客户的基础资料和历史跟进记录生成分析结果。
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>AI 分析操作</h2>
+                            </div>
+                            <div class="btn-group">
+                                <button onclick="aiSummary()">AI 总结跟进记录</button>
+                                <button class="secondary" onclick="aiSuggestion()">AI 生成下一步建议</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>分析结果</h2>
+                            </div>
+                            <div id="aiResult" class="result">
+                                <div class="result-empty">选择客户后可生成 AI 分析结果</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+                 RAG 知识库 Page
+                 ════════════════════════════════════ -->
+            <div id="pageRAG" class="page-section">
+                <div class="page-intro">
+                    <span class="intro-dot"></span>
+                    上传产品资料或行业资料后，系统会先检索相关资料片段，再调用大模型生成回答，并展示参考资料来源。
+                </div>
+
+                <div class="ai-grid">
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>知识库资料</h2>
+                                <div style="margin-top:6px;display:flex;gap:6px;">
+                                    <input id="ragSearch" type="text" placeholder="按文件名搜索..." style="flex:1;"
+                                           onkeydown="if(event.key==='Enter')searchRagDocuments()">
+                                    <button onclick="searchRagDocuments()" style="flex-shrink:0;">搜索</button>
+                                    <button onclick="document.getElementById('ragSearch').value='';loadRagDocuments();"
+                                            style="flex-shrink:0;">清除</button>
+                                </div>
+                            </div>
+                            <input id="ragFile" type="file" accept=".pdf,.txt,.md,.csv" multiple>
+                            <div class="btn-group">
+                                <button class="success" onclick="uploadRagFile()">上传资料</button>
+                                <button class="danger" onclick="clearRagDocuments()">清空全部</button>
+                            </div>
+                            <div class="btn-group" style="margin-top:6px;">
+                                <button class="outline" onclick="reindexRag()" title="重新计算所有资料片段的向量嵌入，一般在向量检索异常时使用">🔄 重建向量索引</button>
+                            </div>
+                            <div class="muted" style="margin-bottom:8px;">支持 PDF、TXT、MD、CSV，可一次选择多个文件。</div>
+                            <div id="ragVectorStatus" class="muted" style="margin-bottom:8px;"></div>
+                            <div id="ragDocumentList"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>产品资料问答</h2>
+                            </div>
+                            <textarea id="ragQuestion" placeholder="例如：客户做车载中控屏，应该推荐哪些显示方案？需要追问哪些参数？"></textarea>
+                            <button class="success" onclick="askRag()">基于资料回答</button>
+                            <div id="ragResult" class="result">
+                                <div class="result-empty">上传资料后，可以在这里提问。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+                 Agent 跟进助手 Page
+                 ════════════════════════════════════ -->
+            <div id="pageAgent" class="page-section">
+                <div class="page-intro">
+                    <span class="intro-dot"></span>
+                    V4 Agent 会自动查询客户信息、历史跟进记录和知识库资料，并调用大模型生成完整客户跟进方案。
+                </div>
+
+                <div class="ai-grid">
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Agent 任务设置</h2>
+                            </div>
+                            <select id="agentCustomerSelect">
+                                <option value="" disabled selected>请选择要分析的客户</option>
+                            </select>
+                            <textarea id="agentTask" placeholder="例如：帮我分析这个客户下一步怎么跟进，并结合产品资料给出销售话术。">帮我分析这个客户下一步怎么跟进，并结合知识库资料给出销售话术。</textarea>
+                            <button onclick="runAgentAnalyze()" style="width:100%;">启动 Agent 分析</button>
+                            <div class="muted" style="margin-top:10px;">
+                                Agent 会自动调用：客户查询工具、跟进记录查询工具、知识库检索工具和大模型生成工具。
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Agent 执行步骤</h2>
+                            </div>
+                            <div id="agentSteps" class="result">
+                                <div class="result-empty">等待启动 Agent。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>Agent 分析结果</h2>
+                            </div>
+                            <div id="agentResult" class="result">
+                                <div class="result-empty">Agent 生成的完整跟进方案会显示在这里。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+                 Due Follow-ups Page
+                 ════════════════════════════════════ -->
+            <div id="pageDue" class="page-section">
+                <div class="page-intro">
+                    <span class="intro-dot"></span>
+                    以下客户已到或超过计划跟进时间，且状态非终态，需尽快跟进。
+                </div>
+
+                <div class="btn-group" style="margin-bottom:16px;">
+                    <button onclick="loadDueCustomers()">刷新列表</button>
                 </div>
 
                 <div class="card">
-                    <h2>历史跟进记录</h2>
-                    <div id="followupList" class="muted">暂无记录</div>
+                    <div class="card-header">
+                        <h2>待跟进客户</h2>
+                        <span class="badge" id="dueCountBadge">0</span>
+                    </div>
+                    <div id="dueCustomerList"></div>
                 </div>
             </div>
-        </div>
+
+            <!-- ════════════════════════════════════
+                 User Admin Page
+                 ════════════════════════════════════ -->
+            <div id="pageAdmin" class="page-section">
+                <div class="page-intro">
+                    <span class="intro-dot"></span>
+                    管理员可以创建用户、查看用户列表、启用或禁用账号。普通用户可修改自己的密码。
+                </div>
+
+                <div class="ai-grid">
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>新增用户</h2>
+                            </div>
+                            <input id="newUsername" placeholder="用户名（至少 3 个字符）">
+                            <input id="newPassword" type="password" placeholder="密码（至少 8 个字符）">
+                            <select id="newUserRole">
+                                <option value="user" selected>普通用户 (user)</option>
+                                <option value="admin">管理员 (admin)</option>
+                            </select>
+                            <button onclick="createUser()">创建用户</button>
+                            <div id="createUserMsg" style="margin-top:8px;font-size:13px;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>用户列表</h2>
+                                <span class="badge" id="userCountBadge">0</span>
+                            </div>
+                            <div id="userList"></div>
+                            <div style="margin-top:10px;">
+                                <button class="light" onclick="loadUserList()">刷新列表</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════
+                 Change Password Modal
+                 ════════════════════════════════════ -->
+            <div id="changePasswordOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+                <div style="background:var(--card-bg);border-radius:var(--radius-lg);padding:32px;max-width:400px;width:90%;box-shadow:var(--shadow-lg);">
+                    <h3 style="margin-bottom:16px;font-size:16px;font-weight:700;">修改密码</h3>
+                    <input id="cpOldPassword" type="password" placeholder="当前密码">
+                    <input id="cpNewPassword" type="password" placeholder="新密码（至少 6 个字符）">
+                    <div id="cpMsg" style="font-size:13px;margin:4px 0;min-height:20px;"></div>
+                    <button onclick="doChangePassword()">确认修改</button>
+                    <button class="light" onclick="hideChangePassword()">取消</button>
+                </div>
+            </div>
+
+        </main>
     </div>
-
-    <!-- AI 跟进分析模块 -->
-    <div id="pageAI" class="page-section">
-        <p class="page-intro">基于当前选中的客户资料和历史跟进记录，调用大模型生成客户总结和下一步销售建议。</p>
-
-        <div class="card">
-            <h2>当前分析客户</h2>
-            <div id="currentCustomerBox" class="current-customer muted">暂未选择客户。可以在下方直接选择一个客户。</div>
-
-            <div style="margin-top:12px;">
-                <select id="aiCustomerSelect">
-                    <option value="" disabled selected>请选择要分析的客户</option>
-                </select>
-                <button onclick="switchCustomerFromAI()">切换为当前客户</button>
-            </div>
-
-            <div class="muted" style="margin-top:8px;">
-                选择客户后，AI 会基于该客户的基础资料和历史跟进记录生成分析结果。
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>AI 分析</h2>
-            <button onclick="aiSummary()">AI 总结跟进记录</button>
-            <button class="secondary" onclick="aiSuggestion()">AI 生成下一步建议</button>
-            <div id="aiResult" class="result">AI 结果会显示在这里</div>
-        </div>
-    </div>
-
-    <!-- RAG 知识库问答模块 -->
-    <div id="pageRAG" class="page-section">
-        <p class="page-intro">上传产品资料或行业资料后，系统会先检索相关资料片段，再调用大模型生成回答，并展示参考资料来源。</p>
-
-        <div class="grid-even">
-            <div>
-                <div class="card">
-                    <h2>知识库资料</h2>
-                    <input id="ragFile" type="file" accept=".pdf,.txt,.md,.csv" multiple>
-                    <button class="green" onclick="uploadRagFile()">上传资料</button>
-                    <button class="danger" onclick="clearRagDocuments()">清空全部资料</button>
-                    <div class="muted">支持 PDF、TXT、MD、CSV，可一次选择多个文件。适合上传产品手册、参数说明、行业资料。</div>
-                    <div id="ragDocumentList" style="margin-top:10px;"></div>
-                </div>
-            </div>
-
-            <div>
-                <div class="card">
-                    <h2>RAG 产品资料问答</h2>
-                    <textarea id="ragQuestion" placeholder="例如：客户做车载中控屏，应该推荐哪些显示方案？需要追问哪些参数？"></textarea>
-                    <button class="green" onclick="askRag()">基于资料回答</button>
-                    <div id="ragResult" class="result">上传资料后，可以在这里提问。</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Agent 跟进助手模块 -->
-    <div id="pageAgent" class="page-section">
-        <p class="page-intro">V4 Agent 会自动查询客户信息、历史跟进记录和知识库资料，并调用大模型生成完整客户跟进方案。</p>
-
-        <div class="grid-even">
-            <div>
-                <div class="card">
-                    <h2>Agent 任务设置</h2>
-                    <select id="agentCustomerSelect">
-                        <option value="" disabled selected>请选择要分析的客户</option>
-                    </select>
-                    <textarea id="agentTask" placeholder="例如：帮我分析这个客户下一步怎么跟进，并结合产品资料给出销售话术。">帮我分析这个客户下一步怎么跟进，并结合知识库资料给出销售话术。</textarea>
-                    <button onclick="runAgentAnalyze()">启动 Agent 分析</button>
-                    <div class="muted">Agent 会自动调用：客户查询工具、跟进记录查询工具、知识库检索工具和大模型生成工具。</div>
-                </div>
-
-                <div class="card">
-                    <h2>Agent 执行步骤</h2>
-                    <div id="agentSteps" class="result">等待启动 Agent。</div>
-                </div>
-            </div>
-
-            <div>
-                <div class="card">
-                    <h2>Agent 分析结果</h2>
-                    <div id="agentResult" class="result">Agent 生成的完整跟进方案会显示在这里。</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <script>
 let selectedCustomerId = null;
 let selectedCustomerData = null;
 
+// ─── Cache for dashboard stats ───
+let _allCustomers = [];
+let _cachedDocs = [];
+
+// ─── Search / Filter / Pagination state ───
+let _searchPage = 1;
+let _searchTimer = null;
+let _searchTotal = 0;
+
+// ─── Sidebar toggle (mobile) ───
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    sidebar.classList.toggle('open');
+    backdrop.classList.toggle('open');
+}
+
+// ─── Auth helpers ───
+
+async function checkAuth() {
+    try {
+        const res = await fetch("/auth/me", {credentials: "include"});
+        const data = await res.json();
+        if (data.logged_in) {
+            showApp();
+        } else {
+            showLogin("");
+        }
+    } catch {
+        showLogin("网络错误，请检查服务是否运行");
+    }
+}
+
+function showLogin(msg) {
+    document.getElementById("loginPage").classList.remove("hidden");
+    document.getElementById("mainApp").classList.add("hidden");
+    document.getElementById("loginError").textContent = msg || "";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginUsername").focus();
+    document.getElementById("tabAdmin").style.display = "none";
+}
+
+async function showApp() {
+    document.getElementById("loginPage").classList.add("hidden");
+    document.getElementById("mainApp").classList.remove("hidden");
+
+    // Always hide admin tab first, then show only if current user is admin
+    document.getElementById("tabAdmin").style.display = "none";
+    try {
+        const me = await request("/auth/me");
+        if (me.role === "admin") {
+            document.getElementById("tabAdmin").style.display = "flex";
+        }
+    } catch (e) {
+        // ignore — admin tab stays hidden
+    }
+
+    loadCustomers();
+    loadRagDocuments();
+    updateCurrentCustomerBox();
+    showPage('dashboard');
+}
+
+async function handleLogin() {
+    const username = document.getElementById("loginUsername").value.trim() || "admin";
+    const password = document.getElementById("loginPassword").value;
+    const btn = document.getElementById("loginBtn");
+    const errorEl = document.getElementById("loginError");
+
+    if (!password) {
+        errorEl.textContent = "请输入访问密码";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "登录中...";
+    errorEl.textContent = "";
+
+    try {
+        const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({username, password}),
+            credentials: "include",
+        });
+
+        if (res.ok) {
+            showApp();
+        } else {
+            const err = await res.json();
+            errorEl.textContent = err.detail || "登录失败";
+            document.getElementById("loginPassword").value = "";
+            document.getElementById("loginPassword").focus();
+        }
+    } catch {
+        errorEl.textContent = "网络错误，请检查服务是否运行";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "登录";
+    }
+}
+
+async function handleLogout() {
+    await fetch("/auth/logout", {method: "POST", credentials: "include"});
+    showLogin("已退出登录");
+}
+
+// ─── Page navigation ───
+
 function showPage(name) {
     const pages = {
+        dashboard: "pageDashboard",
         customer: "pageCustomer",
         ai: "pageAI",
         rag: "pageRAG",
-        agent: "pageAgent"
+        agent: "pageAgent",
+        due: "pageDue",
+        admin: "pageAdmin"
     };
     const tabs = {
+        dashboard: "tabDashboard",
         customer: "tabCustomer",
         ai: "tabAI",
         rag: "tabRAG",
-        agent: "tabAgent"
+        agent: "tabAgent",
+        due: "tabDue",
+        admin: "tabAdmin"
+    };
+    const pageTitles = {
+        dashboard: "数据概览",
+        customer: "客户管理",
+        ai: "AI 跟进分析",
+        rag: "RAG 知识库",
+        agent: "Agent 跟进助手",
+        due: "待跟进客户",
+        admin: "用户管理"
     };
 
     Object.values(pages).forEach(id => {
@@ -483,6 +1865,29 @@ function showPage(name) {
 
     document.getElementById(pages[name]).classList.add("active");
     document.getElementById(tabs[name]).classList.add("active");
+
+    // Update page title in header
+    const titleEl = document.getElementById("pageTitle");
+    if (titleEl && pageTitles[name]) {
+        titleEl.textContent = pageTitles[name];
+    }
+
+    // Auto-load due customers when navigating to due page
+    if (name === 'due') {
+        loadDueCustomers();
+    }
+    // Auto-load user list when navigating to admin page
+    if (name === 'admin') {
+        loadUserList();
+    }
+
+    // Close mobile sidebar after navigation
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('open');
+    }
 }
 
 function escapeHtml(text) {
@@ -546,46 +1951,48 @@ function renderAIText(text) {
     }).join("");
 }
 
+// ─── Dashboard Stats ───
+
+function updateDashboardStats() {
+    const total = document.getElementById('statTotalCustomers');
+    const cooperating = document.getElementById('statCooperating');
+    const following = document.getElementById('statFollowing');
+    const docs = document.getElementById('statDocuments');
+    const badge = document.getElementById('customerCountBadge');
+
+    if (total) total.textContent = _allCustomers.length;
+    if (cooperating) cooperating.textContent = _allCustomers.filter(c => c.cooperation_status === '已合作').length;
+    if (following) following.textContent = _allCustomers.filter(c => c.cooperation_status === '跟进洽谈').length;
+    if (docs) docs.textContent = _cachedDocs.length;
+    if (badge) badge.textContent = _searchTotal;
+}
+
+// ─── Request helper with 401 handling ───
+
 async function request(url, options = {}) {
     const headers = {"Content-Type": "application/json"};
-    const adminKey = localStorage.getItem("admin_api_key");
-    if (adminKey) {
-        headers["X-Admin-Key"] = adminKey;
-    }
     const res = await fetch(url, {
         headers,
+        credentials: "include",
         ...options
     });
+
+    if (res.status === 401) {
+        showLogin("登录已失效，请重新登录");
+        throw new Error("未登录或登录已失效");
+    }
+
     if (!res.ok) {
         const err = await res.json();
         alert(err.detail || "请求失败");
         throw new Error(err.detail || "请求失败");
     }
+
     return res.json();
 }
 
-async function createCustomer() {
-    const data = {
-        name: document.getElementById("name").value,
-        company: document.getElementById("company").value,
-        phone: document.getElementById("phone").value,
-        email: document.getElementById("email").value,
-        industry: document.getElementById("industry").value,
-        level: document.getElementById("level").value,
-        intention: document.getElementById("intention").value,
-        cooperation_status: document.getElementById("cooperationStatus").value
-    };
-
-    if (!data.name || !data.company) {
-        alert("客户姓名和公司名称必填");
-        return;
-    }
-
-    await request("/customers", {
-        method: "POST",
-        body: JSON.stringify(data)
-    });
-
+// ─── Modal helpers ───
+function _clearModalFields() {
     document.getElementById("name").value = "";
     document.getElementById("company").value = "";
     document.getElementById("phone").value = "";
@@ -594,81 +2001,258 @@ async function createCustomer() {
     document.getElementById("level").value = "";
     document.getElementById("intention").value = "";
     document.getElementById("cooperationStatus").value = "";
-
-    loadCustomers();
+    document.getElementById("source").value = "";
+    document.getElementById("remark").value = "";
+    document.getElementById("nextFollowupAt").value = "";
+    document.getElementById("followupStatus").value = "";
+    document.getElementById("editCustomerId").value = "";
 }
 
-async function loadCustomers() {
-    const customers = await request("/customers");
-    const box = document.getElementById("customerList");
-    const aiSelect = document.getElementById("aiCustomerSelect");
-    const agentSelect = document.getElementById("agentCustomerSelect");
+function _fillModalFromData(c) {
+    document.getElementById("name").value = c.name || "";
+    document.getElementById("company").value = c.company || "";
+    document.getElementById("phone").value = c.phone || "";
+    document.getElementById("email").value = c.email || "";
+    document.getElementById("industry").value = c.industry || "";
+    document.getElementById("level").value = c.level || "";
+    document.getElementById("intention").value = c.intention || "";
+    document.getElementById("cooperationStatus").value = c.cooperation_status || "";
+    document.getElementById("source").value = c.source || "";
+    document.getElementById("remark").value = c.remark || "";
+    if (c.next_followup_at) {
+        document.getElementById("nextFollowupAt").value = new Date(c.next_followup_at).toISOString().slice(0, 16);
+    } else {
+        document.getElementById("nextFollowupAt").value = "";
+    }
+    document.getElementById("followupStatus").value = c.followup_status || "";
+}
 
-    if (customers.length === 0) {
-        box.innerHTML = '<div class="muted">暂无客户，请先新增一个客户。</div>';
-        if (aiSelect) {
-            aiSelect.innerHTML = '<option value="" disabled selected>暂无客户，请先新增客户</option>';
-        }
-        if (agentSelect) {
-            agentSelect.innerHTML = '<option value="" disabled selected>暂无客户，请先新增客户</option>';
-        }
+function openCustomerModal(isEdit) {
+    _clearModalFields();
+    document.getElementById("editCustomerId").value = "";
+    if (isEdit && selectedCustomerData) {
+        document.getElementById("customerModalTitle").textContent = "编辑客户";
+        _fillModalFromData(selectedCustomerData);
+        document.getElementById("editCustomerId").value = selectedCustomerData.id;
+    } else {
+        document.getElementById("customerModalTitle").textContent = "新增客户";
+    }
+    document.getElementById("customerModal").style.display = "flex";
+}
+
+function closeCustomerModal() {
+    document.getElementById("customerModal").style.display = "none";
+    _clearModalFields();
+}
+
+async function saveCustomerFromModal() {
+    const id = document.getElementById("editCustomerId").value;
+    const followupVal = document.getElementById("nextFollowupAt").value;
+    const data = {
+        name: document.getElementById("name").value,
+        company: document.getElementById("company").value,
+        phone: document.getElementById("phone").value,
+        email: document.getElementById("email").value,
+        industry: document.getElementById("industry").value,
+        level: document.getElementById("level").value,
+        intention: document.getElementById("intention").value,
+        cooperation_status: document.getElementById("cooperationStatus").value,
+        source: document.getElementById("source").value,
+        remark: document.getElementById("remark").value,
+        next_followup_at: followupVal ? new Date(followupVal).toISOString() : null,
+        followup_status: document.getElementById("followupStatus").value || "待跟进"
+    };
+
+    if (!data.name || !data.company) {
+        alert("客户姓名和公司名称必填");
         return;
     }
 
-    box.innerHTML = customers.map(c => `
-        <div class="customer-item" onclick="selectCustomer(${c.id})">
-            <div>
-                <b>${escapeHtml(c.name)}</b>
-                <span class="tag">${escapeHtml(c.intention || "未设置意向")}</span>
-                <span class="status-tag">${escapeHtml(c.cooperation_status || "未设置状态")}</span>
-            </div>
-            <div class="muted">${escapeHtml(c.company)}</div>
-            <div class="muted">${escapeHtml(c.industry || "未知行业")} · ${escapeHtml(c.level || "未分级")}</div>
-        </div>
-    `).join("");
+    if (id) {
+        await request(`/customers/${id}`, { method: "PUT", body: JSON.stringify(data) });
+    } else {
+        await request("/customers", { method: "POST", body: JSON.stringify(data) });
+    }
 
-    const customerOptions = customers.map(c => `
+    closeCustomerModal();
+    await loadCustomers();
+    if (id && selectedCustomerId === Number(id)) {
+        await selectCustomer(Number(id));
+    }
+}
+
+// Keep backward compat shim
+function createCustomer() { openCustomerModal(false); }
+
+function _buildSearchParams() {
+    const params = new URLSearchParams();
+    const q = document.getElementById("searchQ").value.trim();
+    if (q) params.set("q", q);
+    const level = document.getElementById("filterLevel").value;
+    if (level) params.set("level", level);
+    const intention = document.getElementById("filterIntention").value;
+    if (intention) params.set("intention", intention);
+    const cs = document.getElementById("filterCooperationStatus").value;
+    if (cs) params.set("cooperation_status", cs);
+    const fs = document.getElementById("filterFollowupStatus").value;
+    if (fs) params.set("followup_status", fs);
+    const src = document.getElementById("filterSource").value.trim();
+    if (src) params.set("source", src);
+    if (document.getElementById("filterDueOnly").checked) params.set("due_only", "true");
+    params.set("page", String(_searchPage));
+    params.set("page_size", "10");
+    return params;
+}
+
+async function searchCustomers() {
+    // Debounce
+    if (_searchTimer) clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(async () => {
+        _searchPage = 1;
+        await _doSearch();
+    }, 200);
+}
+
+async function _doSearch() {
+    const params = _buildSearchParams();
+    try {
+        const data = await request("/customers/search?" + params.toString());
+        _renderCustomerList(data.items);
+        _renderPagination(data);
+        _searchTotal = data.total;
+        document.getElementById("customerCountBadge").textContent = data.total;
+    } catch (e) {
+        // Error already handled by request()
+    }
+}
+
+function _renderCustomerList(customers) {
+    const box = document.getElementById("customerList");
+    if (customers.length === 0) {
+        box.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>暂无客户，请先新增一个客户。</p></div>';
+        return;
+    }
+    box.innerHTML = customers.map(c => {
+        const nextDate = c.next_followup_at ? new Date(c.next_followup_at).toLocaleDateString() : "";
+        const dueText = nextDate ? `下次：${nextDate}` : "";
+        return `
+        <div class="customer-item" data-customer-id="${c.id}" onclick="selectCustomer(${c.id})">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <b>${escapeHtml(c.name)}</b>
+                <span class="status-tag">${escapeHtml(c.followup_status || "待跟进")}</span>
+            </div>
+            <div class="muted" style="font-size:12px;">${escapeHtml(c.company)} · ${escapeHtml(c.level || "未分级")} · ${escapeHtml(c.intention || "未设置")}</div>
+            <div class="muted" style="font-size:11px;">${dueText}${c.source ? ' · ' + escapeHtml(c.source) : ''}</div>
+        </div>
+    `}).join("");
+    updateSelectedCustomerHighlight();
+}
+
+function updateSelectedCustomerHighlight() {
+    document.querySelectorAll("#customerList .customer-item").forEach(item => {
+        const id = Number(item.dataset.customerId);
+        item.classList.toggle("selected", id === selectedCustomerId);
+    });
+}
+
+function _renderPagination(data) {
+    const box = document.getElementById("customerPagination");
+    if (data.total === 0) {
+        box.innerHTML = "";
+        return;
+    }
+    box.innerHTML = `
+        <button class="light" onclick="goToPage(${data.page - 1})" ${data.page <= 1 ? "disabled" : ""} style="font-size:12px;padding:4px 10px;">上一页</button>
+        <span>第 ${data.page} / ${data.pages} 页（共 ${data.total} 条）</span>
+        <button class="light" onclick="goToPage(${data.page + 1})" ${data.page >= data.pages ? "disabled" : ""} style="font-size:12px;padding:4px 10px;">下一页</button>
+    `;
+}
+
+function _updateAiAgentSelects() {
+    const aiSelect = document.getElementById("aiCustomerSelect");
+    const agentSelect = document.getElementById("agentCustomerSelect");
+    const customers = _allCustomers;
+    const options = customers.map(c => `
         <option value="${c.id}">${escapeHtml(c.name)}｜${escapeHtml(c.company)}｜${escapeHtml(c.intention || "未设置意向")}</option>
     `).join("");
-
     if (aiSelect) {
-        aiSelect.innerHTML = '<option value="" disabled selected>请选择要分析的客户</option>' + customerOptions;
-
-        if (selectedCustomerId) {
-            aiSelect.value = String(selectedCustomerId);
-        }
+        aiSelect.innerHTML = '<option value="" disabled selected>请选择要分析的客户</option>' + (options || '<option value="" disabled>暂无客户</option>');
+        if (selectedCustomerId) aiSelect.value = String(selectedCustomerId);
     }
-
     if (agentSelect) {
-        agentSelect.innerHTML = '<option value="" disabled selected>请选择要分析的客户</option>' + customerOptions;
-
-        if (selectedCustomerId) {
-            agentSelect.value = String(selectedCustomerId);
-        }
+        agentSelect.innerHTML = '<option value="" disabled selected>请选择要分析的客户</option>' + (options || '<option value="" disabled>暂无客户</option>');
+        if (selectedCustomerId) agentSelect.value = String(selectedCustomerId);
     }
+}
+
+function goToPage(p) {
+    if (p < 1) return;
+    _searchPage = p;
+    _doSearch();
+}
+
+function resetSearch() {
+    document.getElementById("searchQ").value = "";
+    document.getElementById("filterLevel").value = "";
+    document.getElementById("filterIntention").value = "";
+    document.getElementById("filterCooperationStatus").value = "";
+    document.getElementById("filterFollowupStatus").value = "";
+    document.getElementById("filterSource").value = "";
+    document.getElementById("filterDueOnly").checked = false;
+    _searchPage = 1;
+    _doSearch();
+}
+
+// loadCustomerReferenceData() loads the FULL customer list for AI/Agent selects and dashboard stats
+async function loadCustomerReferenceData() {
+    try {
+        _allCustomers = await request("/customers");
+        _updateAiAgentSelects();
+        updateDashboardStats();
+    } catch (e) {
+        // Error already handled by request()
+    }
+}
+
+// loadCustomers() refreshes both reference data and search view
+async function loadCustomers() {
+    await loadCustomerReferenceData();
+    await _doSearch();
 }
 
 async function selectCustomer(id) {
     selectedCustomerId = id;
+    updateSelectedCustomerHighlight();
     const c = await request(`/customers/${id}`);
     selectedCustomerData = c;
 
+    const nextDate = c.next_followup_at ? new Date(c.next_followup_at).toLocaleString() : "未设置";
+    const lastDate = c.last_followup_at ? new Date(c.last_followup_at).toLocaleString() : "暂无";
     document.getElementById("customerDetail").innerHTML = `
-        <b>${escapeHtml(c.name)}</b>
-        <span class="tag">${escapeHtml(c.level || "未分级")}</span>
-        <span class="status-tag">${escapeHtml(c.cooperation_status || "未设置状态")}</span>
-        <p>公司：${escapeHtml(c.company)}</p>
-        <p>电话：${escapeHtml(c.phone || "未填写")}</p>
-        <p>邮箱：${escapeHtml(c.email || "未填写")}</p>
-        <p>行业：${escapeHtml(c.industry || "未知")}</p>
-        <p>意向：${escapeHtml(c.intention || "未设置")}</p>
-        <p>合作状态：${escapeHtml(c.cooperation_status || "未设置")}</p>
+        <div style="font-size:20px;font-weight:700;margin-bottom:4px;">${escapeHtml(c.name)}</div>
+        <div style="color:var(--text-secondary);margin-bottom:12px;">${escapeHtml(c.company)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+            <span class="tag">${escapeHtml(c.level || "未分级")}</span>
+            <span class="status-tag">${escapeHtml(c.followup_status || "待跟进")}</span>
+            <span class="tag">${escapeHtml(c.intention || "未设置意向")}</span>
+        </div>
+        <div style="line-height:2;font-size:14px;color:var(--text-secondary);">
+            <div>📞 ${escapeHtml(c.phone || "未填写")}  ✉️ ${escapeHtml(c.email || "未填写")}</div>
+            <div>🏭 ${escapeHtml(c.industry || "未知行业")}  📊 ${escapeHtml(c.cooperation_status || "未设置")}</div>
+            <div>📍 来源：${escapeHtml(c.source || "未填写")}</div>
+            <div>📅 最近跟进：${lastDate}  ·  下次：${nextDate}</div>
+            <div style="margin-top:8px;padding:8px;background:#f8fafc;border-radius:6px;">📝 ${escapeHtml(c.remark || "无备注")}</div>
+        </div>
     `;
 
-    document.getElementById("detailActions").style.display = "block";
-    hideEditCustomerForm();
+    document.getElementById("detailActions").style.display = "flex";
+    closeCustomerModal();
 
-    document.getElementById("aiResult").innerHTML = "AI 结果会显示在这里";
+    // Show follow-up panel form
+    document.getElementById("followupPanelHint").style.display = "none";
+    document.getElementById("followupPanelForm").style.display = "block";
+
+    document.getElementById("aiResult").innerHTML = '<div class="result-empty">选择客户后可生成 AI 分析结果</div>';
     updateCurrentCustomerBox();
 
     const aiSelect = document.getElementById("aiCustomerSelect");
@@ -711,18 +2295,21 @@ async function switchCustomerFromAI() {
     }
 
     await selectCustomer(Number(id));
-    document.getElementById("aiResult").innerHTML = "已切换客户，可以点击上方按钮生成 AI 分析。";
+    document.getElementById("aiResult").innerHTML = '<div class="result-empty">已切换客户，可以点击上方按钮生成 AI 分析。</div>';
 }
 
 function clearSelectedCustomer() {
     selectedCustomerId = null;
     selectedCustomerData = null;
-    document.getElementById("customerDetail").innerHTML = "请先选择一个客户";
-    document.getElementById("customerDetail").className = "muted";
+    updateSelectedCustomerHighlight();
+    document.getElementById("customerDetail").innerHTML = '<div style="text-align:center;padding:40px 0;"><div style="font-size:40px;margin-bottom:12px;">👤</div><div>请选择一个客户以查看详情</div></div>';
     document.getElementById("detailActions").style.display = "none";
+    // Hide follow-up panel form
+    document.getElementById("followupPanelHint").style.display = "block";
+    document.getElementById("followupPanelForm").style.display = "none";
     hideEditCustomerForm();
-    document.getElementById("followupList").innerHTML = '<div class="muted">暂无记录</div>';
-    document.getElementById("aiResult").innerHTML = "AI 结果会显示在这里";
+    document.getElementById("followupList").innerHTML = '<div class="muted" style="text-align:center;padding:12px 0;">暂无记录</div>';
+    document.getElementById("aiResult").innerHTML = '<div class="result-empty">选择客户后可生成 AI 分析结果</div>';
 
     const aiSelect = document.getElementById("aiCustomerSelect");
     if (aiSelect) {
@@ -757,60 +2344,10 @@ async function deleteSelectedCustomer() {
     alert("客户已删除");
 }
 
-function showEditCustomerForm() {
-    if (!selectedCustomerData) {
-        alert("请先选择客户");
-        return;
-    }
-
-    document.getElementById("editName").value = selectedCustomerData.name || "";
-    document.getElementById("editCompany").value = selectedCustomerData.company || "";
-    document.getElementById("editPhone").value = selectedCustomerData.phone || "";
-    document.getElementById("editEmail").value = selectedCustomerData.email || "";
-    document.getElementById("editIndustry").value = selectedCustomerData.industry || "";
-    document.getElementById("editLevel").value = selectedCustomerData.level || "";
-    document.getElementById("editIntention").value = selectedCustomerData.intention || "";
-    document.getElementById("editCooperationStatus").value = selectedCustomerData.cooperation_status || "";
-
-    document.getElementById("editCustomerBox").style.display = "block";
-}
-
-function hideEditCustomerForm() {
-    document.getElementById("editCustomerBox").style.display = "none";
-}
-
-async function updateCustomer() {
-    if (!selectedCustomerId) {
-        alert("请先选择客户");
-        return;
-    }
-
-    const data = {
-        name: document.getElementById("editName").value,
-        company: document.getElementById("editCompany").value,
-        phone: document.getElementById("editPhone").value,
-        email: document.getElementById("editEmail").value,
-        industry: document.getElementById("editIndustry").value,
-        level: document.getElementById("editLevel").value,
-        intention: document.getElementById("editIntention").value,
-        cooperation_status: document.getElementById("editCooperationStatus").value
-    };
-
-    if (!data.name || !data.company) {
-        alert("客户姓名和公司名称不能为空");
-        return;
-    }
-
-    await request(`/customers/${selectedCustomerId}`, {
-        method: "PUT",
-        body: JSON.stringify(data)
-    });
-
-    alert("客户信息已修改");
-    hideEditCustomerForm();
-    await loadCustomers();
-    await selectCustomer(selectedCustomerId);
-}
+// Backward compat — now use the modal
+function showEditCustomerForm() { openCustomerModal(true); }
+function hideEditCustomerForm() { closeCustomerModal(); }
+async function updateCustomer() { await saveCustomerFromModal(); }
 
 async function createFollowup() {
     if (!selectedCustomerId) {
@@ -818,9 +2355,12 @@ async function createFollowup() {
         return;
     }
 
+    const nextFollowupVal = document.getElementById("followupNextFollowupAt").value;
     const data = {
         content: document.getElementById("followupContent").value,
-        next_action: document.getElementById("nextAction").value
+        next_action: document.getElementById("nextAction").value,
+        next_followup_at: nextFollowupVal ? new Date(nextFollowupVal).toISOString() : null,
+        followup_status: document.getElementById("followupFollowupStatus").value || null
     };
 
     if (!data.content) {
@@ -835,7 +2375,13 @@ async function createFollowup() {
 
     document.getElementById("followupContent").value = "";
     document.getElementById("nextAction").value = "";
+    document.getElementById("followupNextFollowupAt").value = "";
+    document.getElementById("followupFollowupStatus").value = "";
     loadFollowups();
+    // Refresh customer detail to show updated followup status
+    if (selectedCustomerId) {
+        selectCustomer(selectedCustomerId);
+    }
 }
 
 async function loadFollowups() {
@@ -844,7 +2390,7 @@ async function loadFollowups() {
     const box = document.getElementById("followupList");
 
     if (list.length === 0) {
-        box.innerHTML = '<div class="muted">暂无跟进记录。</div>';
+        box.innerHTML = '<div class="empty-state"><p>暂无跟进记录。</p></div>';
         return;
     }
 
@@ -862,7 +2408,7 @@ async function aiSummary() {
         alert("请先到客户管理中选择客户");
         return;
     }
-    document.getElementById("aiResult").innerHTML = "AI 正在分析中...";
+    document.getElementById("aiResult").innerHTML = '<div class="result-loading"><div class="spinner"></div><span>AI 正在分析中...</span></div>';
     const data = await request(`/customers/${selectedCustomerId}/ai/summary`, {method: "POST"});
     document.getElementById("aiResult").innerHTML = renderAIText(data.result);
 }
@@ -872,7 +2418,7 @@ async function aiSuggestion() {
         alert("请先到客户管理中选择客户");
         return;
     }
-    document.getElementById("aiResult").innerHTML = "AI 正在生成建议...";
+    document.getElementById("aiResult").innerHTML = '<div class="result-loading"><div class="spinner"></div><span>AI 正在生成建议...</span></div>';
     const data = await request(`/customers/${selectedCustomerId}/ai/suggestion`, {method: "POST"});
     document.getElementById("aiResult").innerHTML = renderAIText(data.result);
 }
@@ -893,14 +2439,19 @@ async function uploadRagFile() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const fetchOptions = {method: "POST", body: formData};
-        const adminKey = localStorage.getItem("admin_api_key");
-        if (adminKey) {
-            fetchOptions.headers = {"X-Admin-Key": adminKey};
-        }
+        const fetchOptions = {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+        };
 
         try {
             const res = await fetch("/rag/upload", fetchOptions);
+
+            if (res.status === 401) {
+                showLogin("登录已失效，请重新登录");
+                return;
+            }
 
             if (!res.ok) {
                 const err = await res.json();
@@ -928,21 +2479,122 @@ async function uploadRagFile() {
 }
 
 async function loadRagDocuments() {
-    const docs = await request("/rag/documents");
+    const q = document.getElementById("ragSearch").value.trim();
+    const url = q ? `/rag/documents?q=${encodeURIComponent(q)}` : "/rag/documents";
+    const docs = await request(url);
+    _cachedDocs = docs;
     const box = document.getElementById("ragDocumentList");
 
     if (!docs.length) {
-        box.innerHTML = '<div class="muted">暂无资料，请先上传。</div>';
+        box.innerHTML = q
+            ? '<div class="empty-state"><p>未找到匹配「' + escapeHtml(q) + '」的资料。</p></div>'
+            : '<div class="empty-state"><div class="empty-icon">📄</div><p>暂无资料，请先上传。</p></div>';
+        updateDashboardStats();
         return;
     }
 
-    box.innerHTML = docs.map(d => `
-        <div class="customer-item">
-            <b>${escapeHtml(d.filename)}</b>
-            <div class="muted">知识片段：${d.chunks} 个</div>
-            <button class="danger" onclick="deleteRagDocument('${encodeURIComponent(d.filename)}')">删除资料</button>
-        </div>
-    `).join("");
+    // Aggregate per-file vector counts for the global status bar
+    let totalIndexed = 0;
+    let totalChunks = 0;
+    let hasVectorInfo = false;
+
+    box.innerHTML = docs.map(d => {
+        totalChunks += d.chunks || 0;
+        if (d.vector_indexed != null) {
+            hasVectorInfo = true;
+            totalIndexed += d.vector_indexed;
+        }
+        const vecInfo = d.vector_indexed != null
+            ? `向量索引: ${d.vector_indexed}/${d.chunks}`
+            : "向量搜索未启用";
+        const updatedInfo = d.updated_at
+            ? ` · 更新于 ${d.updated_at.slice(0, 16).replace('T',' ')}`
+            : "";
+        const previewHtml = d.preview
+            ? `<div class="muted" style="font-size:0.85em;margin:4px 0;white-space:pre-wrap;word-break:break-all;">${escapeHtml(d.preview)}…</div>`
+            : "";
+        return `
+            <div class="customer-item">
+                <b>${escapeHtml(d.filename)}</b>
+                <div class="muted">片段：${d.chunks} 个 · ${vecInfo}${updatedInfo}</div>
+                ${previewHtml}
+                <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">
+                    <button onclick="viewFileChunks('${encodeURIComponent(d.filename)}')">查看片段</button>
+                    <button onclick="reindexFile('${encodeURIComponent(d.filename)}')">重建该文件索引</button>
+                    <button class="danger" onclick="deleteRagDocument('${encodeURIComponent(d.filename)}')">删除</button>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    // Show aggregate vector index status
+    const statusEl = document.getElementById("ragVectorStatus");
+    if (hasVectorInfo) {
+        if (totalIndexed === 0) {
+            statusEl.innerHTML = '⚠️ 向量索引为空，请点击「🔄 重建向量索引」以启用语义检索。当前使用 TF-IDF 检索。';
+            statusEl.style.color = '#e67e22';
+        } else if (totalIndexed < totalChunks) {
+            statusEl.innerHTML = `⚠️ 向量索引不完整（${totalIndexed}/${totalChunks}），部分资料使用 TF-IDF 检索。建议重建索引。`;
+            statusEl.style.color = '#e67e22';
+        } else {
+            statusEl.innerHTML = `✅ 向量索引完整（${totalIndexed} 个片段），使用语义向量检索。`;
+            statusEl.style.color = '#27ae60';
+        }
+    } else {
+        statusEl.innerHTML = '';
+    }
+
+    updateDashboardStats();
+}
+
+function searchRagDocuments() {
+    const q = document.getElementById("ragSearch").value.trim();
+    if (!q) { loadRagDocuments(); return; }
+    loadRagDocuments();
+}
+
+async function viewFileChunks(encodedFilename) {
+    const resultEl = document.getElementById("ragResult");
+    resultEl.innerHTML = '<div class="result-loading"><div class="spinner"></div><span>加载片段...</span></div>';
+    try {
+        const data = await request(`/rag/documents/${encodedFilename}/chunks`);
+        let html = `<h3>📄 ${escapeHtml(data.filename)} — ${data.chunks.length} 个片段</h3>`;
+        data.chunks.forEach(c => {
+            html += `<div style="background:#f8f9fa;padding:8px;margin:6px 0;border-radius:4px;font-size:0.9em;">
+                <div class="muted" style="font-size:0.8em;margin-bottom:4px;">片段 ${c.chunk_index} · ${c.created_at.slice(0,16).replace('T',' ')}</div>
+                <div style="white-space:pre-wrap;word-break:break-all;">${escapeHtml(c.content)}</div>
+            </div>`;
+        });
+        resultEl.innerHTML = html;
+    } catch (e) {
+        resultEl.innerHTML = '<div class="result-empty">加载片段失败。</div>';
+    }
+}
+
+async function reindexFile(encodedFilename) {
+    const filename = decodeURIComponent(encodedFilename);
+    const ok = confirm(`将为文件「${filename}」重新计算向量索引。确定吗？`);
+    if (!ok) return;
+    try {
+        const resp = await fetch(`/rag/documents/${encodedFilename}/reindex`, {
+            method: "POST",
+            credentials: "include",
+        });
+        if (resp.status === 401) { showLogin("登录已失效，请重新登录"); return; }
+        const data = await resp.json();
+        if (!resp.ok) {
+            alert(data.detail || "重建失败");
+            return;
+        }
+        if (data.reindexed) {
+            alert(data.message || "文件索引重建完成");
+        } else {
+            alert(data.message || "向量搜索未启用");
+        }
+        await loadRagDocuments();
+    } catch (e) {
+        alert("文件索引重建请求失败");
+    }
 }
 
 async function deleteRagDocument(encodedFilename) {
@@ -957,7 +2609,7 @@ async function deleteRagDocument(encodedFilename) {
         method: "DELETE"
     });
 
-    document.getElementById("ragResult").innerHTML = "资料已删除。请重新提问或上传新资料。";
+    document.getElementById("ragResult").innerHTML = '<div class="result-empty">资料已删除。请重新提问或上传新资料。</div>';
     await loadRagDocuments();
     alert("资料已删除");
 }
@@ -973,9 +2625,48 @@ async function clearRagDocuments() {
         method: "DELETE"
     });
 
-    document.getElementById("ragResult").innerHTML = "知识库已清空，请重新上传资料后再提问。";
+    document.getElementById("ragResult").innerHTML = '<div class="result-empty">知识库已清空，请重新上传资料后再提问。</div>';
     await loadRagDocuments();
     alert("知识库已清空");
+}
+
+async function reindexRag() {
+    const ok = confirm("将重新计算所有资料片段的向量嵌入并重建索引。\n\n此操作可能需要一些时间，期间向量检索暂时不可用（会自动降级到 TF-IDF）。\n\n确定要重建吗？");
+    if (!ok) return;
+
+    const statusEl = document.getElementById("ragVectorStatus");
+    statusEl.innerHTML = '🔄 正在重建向量索引...';
+    statusEl.style.color = '#3498db';
+
+    try {
+        const resp = await fetch("/rag/reindex", {
+            method: "POST",
+            credentials: "include",
+        });
+
+        if (resp.status === 401) {
+            showLogin("登录已失效，请重新登录");
+            return;
+        }
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+            statusEl.innerHTML = `❌ 重建失败：${data.detail || "未知错误"}`;
+            statusEl.style.color = '#e74c3c';
+            alert(`重建向量索引失败：${data.detail || "未知错误"}`);
+            return;
+        }
+
+        statusEl.innerHTML = `✅ 向量索引重建完成，共 ${data.chunks || 0} 个片段`;
+        statusEl.style.color = '#27ae60';
+        alert(data.message || "向量索引重建完成");
+        await loadRagDocuments();
+    } catch (error) {
+        statusEl.innerHTML = '❌ 重建失败：网络或服务异常';
+        statusEl.style.color = '#e74c3c';
+        alert("重建向量索引失败：网络或服务异常");
+    }
 }
 
 async function askRag() {
@@ -985,7 +2676,7 @@ async function askRag() {
         return;
     }
 
-    document.getElementById("ragResult").innerHTML = "正在检索知识库并生成回答...";
+    document.getElementById("ragResult").innerHTML = '<div class="result-loading"><div class="spinner"></div><span>正在检索知识库并生成回答...</span></div>';
 
     const data = await request("/rag/ask", {
         method: "POST",
@@ -1021,8 +2712,8 @@ async function runAgentAnalyze() {
         return;
     }
 
-    document.getElementById("agentSteps").innerHTML = "Agent 正在执行工具调用...";
-    document.getElementById("agentResult").innerHTML = "Agent 正在生成完整跟进方案...";
+    document.getElementById("agentSteps").innerHTML = '<div class="result-loading"><div class="spinner"></div><span>Agent 正在执行工具调用...</span></div>';
+    document.getElementById("agentResult").innerHTML = '<div class="result-loading"><div class="spinner"></div><span>Agent 正在生成完整跟进方案...</span></div>';
 
     const data = await request("/agent/analyze", {
         method: "POST",
@@ -1061,22 +2752,306 @@ async function runAgentAnalyze() {
     document.getElementById("agentResult").innerHTML = resultHtml;
 }
 
+// ─── CSV Import / Export ───
 
-function saveAdminKey() {
-    var key = document.getElementById("adminKeyInput").value;
-    localStorage.setItem("admin_api_key", key);
+function importCsvDialog() {
+    document.getElementById("importCsvFile").click();
 }
 
-(function() {
-    var savedKey = localStorage.getItem("admin_api_key");
-    if (savedKey) {
-        document.getElementById("adminKeyInput").value = savedKey;
+async function handleImportCsv(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const res = await fetch("/customers/import", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+        });
+
+        if (res.status === 401) {
+            showLogin("登录已失效，请重新登录");
+            return;
+        }
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert(data.detail || "导入失败");
+            return;
+        }
+
+        let msg = `导入完成！\n创建：${data.created} 条\n跳过（重复）：${data.skipped} 条`;
+        if (data.errors && data.errors.length) {
+            msg += `\n错误：${data.errors.length} 条`;
+            const errDetails = data.errors.slice(0, 5).map(e => `  第${e.row}行：${e.reason}`).join("\n");
+            msg += `\n\n错误详情（最多显示5条）：\n${errDetails}`;
+            if (data.errors.length > 5) {
+                msg += `\n  ...还有 ${data.errors.length - 5} 条错误`;
+            }
+        }
+
+        alert(msg);
+        await loadCustomers();
+    } catch (err) {
+        alert("网络错误，导入失败");
+    } finally {
+        event.target.value = "";
     }
+}
+
+async function exportCustomers() {
+    try {
+        const res = await fetch("/customers/export", {
+            credentials: "include",
+        });
+
+        if (res.status === 401) {
+            showLogin("登录已失效，请重新登录");
+            return;
+        }
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.detail || "导出失败");
+            return;
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "customers_export.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        alert("网络错误，导出失败");
+    }
+}
+
+async function exportFollowups() {
+    try {
+        const res = await fetch("/followups/export", {
+            credentials: "include",
+        });
+
+        if (res.status === 401) {
+            showLogin("登录已失效，请重新登录");
+            return;
+        }
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.detail || "导出失败");
+            return;
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "followups_export.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        alert("网络错误，导出失败");
+    }
+}
+
+async function loadDueCustomers() {
+    try {
+        const res = await fetch("/customers/due", {
+            credentials: "include",
+        });
+
+        if (res.status === 401) {
+            showLogin("登录已失效，请重新登录");
+            return;
+        }
+
+        if (!res.ok) {
+            alert("加载待跟进客户失败");
+            return;
+        }
+
+        const customers = await res.json();
+        const box = document.getElementById("dueCustomerList");
+        const badge = document.getElementById("dueCountBadge");
+        if (badge) badge.textContent = customers.length;
+
+        if (customers.length === 0) {
+            box.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>暂无需要跟进的客户。</p></div>';
+            return;
+        }
+
+        box.innerHTML = customers.map(c => {
+            const nextDate = c.next_followup_at ? new Date(c.next_followup_at).toLocaleString() : "未设置";
+            return `
+            <div class="customer-item" onclick="selectCustomer(${c.id}); showPage('customer');">
+                <div>
+                    <b>${escapeHtml(c.name)}</b>
+                    <span class="status-tag">${escapeHtml(c.followup_status || "待跟进")}</span>
+                    <span class="tag">${escapeHtml(c.level || "未分级")}</span>
+                </div>
+                <div class="muted">${escapeHtml(c.company)} · ${escapeHtml(c.industry || "未知行业")}</div>
+                <div class="muted">计划跟进：${nextDate}</div>
+                <div class="muted">${escapeHtml((c.remark || "").substring(0, 80))}</div>
+            </div>
+        `}).join("");
+    } catch (err) {
+        alert("网络错误");
+    }
+}
+
+// ─── User Management ───
+
+async function loadUserList() {
+    try {
+        const users = await request("/auth/users");
+        const box = document.getElementById("userList");
+        const badge = document.getElementById("userCountBadge");
+        if (badge) badge.textContent = users.length;
+
+        if (!users.length) {
+            box.innerHTML = '<div class="empty-state"><p>暂无用户</p></div>';
+            return;
+        }
+
+        box.innerHTML = users.map(u => `
+            <div class="customer-item" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <b>${escapeHtml(u.username)}</b>
+                    <span class="tag">${escapeHtml(u.role)}</span>
+                    <span class="status-tag" style="background:${u.is_active ? '#ecfdf5' : '#fef2f2'};color:${u.is_active ? '#065f46' : '#991b1b'};">
+                        ${u.is_active ? '已启用' : '已禁用'}
+                    </span>
+                    <div class="muted" style="font-size:11px;">创建：${new Date(u.created_at).toLocaleDateString()}</div>
+                </div>
+                <button class="${u.is_active ? 'danger' : 'success'}" onclick="toggleUserStatus(${u.id}, ${!u.is_active})" style="font-size:12px;padding:4px 10px;">
+                    ${u.is_active ? '禁用' : '启用'}
+                </button>
+            </div>
+        `).join("");
+    } catch (e) {
+        // Handled by request()
+    }
+}
+
+async function createUser() {
+    const username = document.getElementById("newUsername").value.trim();
+    const password = document.getElementById("newPassword").value;
+    const role = document.getElementById("newUserRole").value;
+    const msg = document.getElementById("createUserMsg");
+
+    if (username.length < 3) { msg.textContent = "用户名至少 3 个字符"; msg.style.color = "#e74c3c"; return; }
+    if (password.length < 8) { msg.textContent = "密码至少 8 个字符"; msg.style.color = "#e74c3c"; return; }
+
+    try {
+        const res = await fetch("/auth/users", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: "include",
+            body: JSON.stringify({username, password, role}),
+        });
+        if (res.status === 401) { showLogin("登录已失效"); return; }
+        const data = await res.json();
+        if (!res.ok) { msg.textContent = data.detail || "创建失败"; msg.style.color = "#e74c3c"; return; }
+        msg.textContent = `用户 ${data.username} 创建成功`;
+        msg.style.color = "#27ae60";
+        document.getElementById("newUsername").value = "";
+        document.getElementById("newPassword").value = "";
+        document.getElementById("newUserRole").value = "user";
+        loadUserList();
+    } catch (e) {
+        msg.textContent = "网络错误"; msg.style.color = "#e74c3c";
+    }
+}
+
+async function toggleUserStatus(userId, makeActive) {
+    const action = makeActive ? "启用" : "禁用";
+    if (!confirm(`确定要${action}该用户吗？`)) return;
+    try {
+        const res = await fetch(`/auth/users/${userId}/status`, {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            credentials: "include",
+            body: JSON.stringify({is_active: makeActive}),
+        });
+        if (res.status === 401) { showLogin("登录已失效"); return; }
+        const data = await res.json();
+        if (!res.ok) { alert(data.detail || "操作失败"); return; }
+        loadUserList();
+    } catch (e) {
+        alert("网络错误");
+    }
+}
+
+// ─── Change Password ───
+
+function showChangePassword() {
+    document.getElementById("changePasswordOverlay").style.display = "flex";
+    document.getElementById("cpOldPassword").value = "";
+    document.getElementById("cpNewPassword").value = "";
+    document.getElementById("cpMsg").textContent = "";
+}
+
+function hideChangePassword() {
+    document.getElementById("changePasswordOverlay").style.display = "none";
+}
+
+async function doChangePassword() {
+    const oldPassword = document.getElementById("cpOldPassword").value;
+    const newPassword = document.getElementById("cpNewPassword").value;
+    const msg = document.getElementById("cpMsg");
+
+    if (!oldPassword) { msg.textContent = "请输入当前密码"; msg.style.color = "#e74c3c"; return; }
+    if (!newPassword || newPassword.length < 6) { msg.textContent = "新密码至少 6 个字符"; msg.style.color = "#e74c3c"; return; }
+
+    try {
+        const res = await fetch("/auth/change-password", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            credentials: "include",
+            body: JSON.stringify({old_password: oldPassword, new_password: newPassword}),
+        });
+        if (res.status === 401) { showLogin("登录已失效"); return; }
+        const data = await res.json();
+        if (!res.ok) { msg.textContent = data.detail || "修改失败"; msg.style.color = "#e74c3c"; return; }
+        msg.textContent = "密码修改成功，请使用新密码重新登录";
+        msg.style.color = "#27ae60";
+        setTimeout(() => {
+            hideChangePassword();
+            handleLogout();
+        }, 1500);
+    } catch (e) {
+        msg.textContent = "网络错误"; msg.style.color = "#e74c3c";
+    }
+}
+
+// ─── Initialization: check auth first ───
+
+(function() {
+    // Listen for Enter key on login page
+    document.getElementById("loginUsername").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            handleLogin();
+        }
+    });
+    document.getElementById("loginPassword").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            handleLogin();
+        }
+    });
 })();
 
-loadCustomers();
-loadRagDocuments();
-updateCurrentCustomerBox();
+checkAuth();
 </script>
 </body>
 </html>

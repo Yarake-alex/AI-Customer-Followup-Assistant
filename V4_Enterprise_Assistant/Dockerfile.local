@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# ── Base + vector dependencies ──
+COPY requirements.txt requirements-vector.txt requirements-embedding-local.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r requirements-vector.txt \
+    && pip install --no-cache-dir -r requirements-embedding-local.txt
+
+# ── Pre-download the embedding model (optional — speeds first request) ──
+# Uncomment to bake the model into the image (~2.2 GB extra):
+# RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-m3')"
+
+# ── App code ──
+COPY app ./app
+COPY static ./static
+
+# ── Use local embedding ──
+ENV EMBEDDING_PROVIDER=local
+ENV EMBEDDING_MODEL=BAAI/bge-m3
+
+EXPOSE 8000
+
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

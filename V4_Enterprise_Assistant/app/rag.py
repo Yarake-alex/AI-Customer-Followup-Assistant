@@ -1,3 +1,4 @@
+import logging
 from io import BytesIO
 from typing import List
 
@@ -5,8 +6,12 @@ from fastapi import UploadFile, HTTPException
 from pypdf import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models import DocumentChunk
+
+logger = logging.getLogger(__name__)
 
 
 def extract_text_from_upload(file: UploadFile, data: bytes) -> str:
@@ -70,6 +75,100 @@ def retrieve_chunks(question: str, chunks: List[DocumentChunk], top_k: int = 4) 
 
     ranked_indexes = scores.argsort()[::-1][:top_k]
     return [chunks[i] for i in ranked_indexes if scores[i] > 0]
+
+
+def _load_user_chunks(db: Session, user_id: int) -> List[DocumentChunk]:
+    """Load all chunks for a user from SQL (used as TF-IDF fallback input)."""
+    return (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.user_id == user_id)
+        .order_by(DocumentChunk.id.asc())
+        .all()
+    )
+
+
+def retrieve_chunks_vector(
+    db: Session,
+    question: str,
+    user_id: int,
+    top_k: int = 4,
+) -> List[DocumentChunk]:
+    """Vector-based retrieval with graceful TF-IDF fallback.
+
+    Degradation chain:
+      1. VECTOR_SEARCH_ENABLED=False → immediate TF-IDF
+      2. Vector store unavailable → TF-IDF
+      3. Vector search returns incomplete results → TF-IDF merge
+      4. Embedding / search error at query time → TF-IDF
+    """
+    # Layer 1: config switch
+    if not settings.VECTOR_SEARCH_ENABLED:
+        chunks = _load_user_chunks(db, user_id)
+        return retrieve_chunks(question, chunks, top_k)
+
+    try:
+        from app.embeddings import get_embedding_service
+        from app.vector_store import get_vector_store
+
+        emb_svc = get_embedding_service()
+        vs = get_vector_store()
+
+        # Layer 2: vector store unavailable
+        if vs is None:
+            logger.info("Vector store unavailable, falling back to TF-IDF")
+            chunks = _load_user_chunks(db, user_id)
+            return retrieve_chunks(question, chunks, top_k)
+
+        # Layer 3: actual vector search
+        query_emb = emb_svc.embed_query(question)
+        chunk_ids = vs.search(query_emb, user_id, top_k)
+
+        # Layer 3a: vector search returned empty — check if vectors are incomplete
+        if not chunk_ids:
+            indexed = vs.count_user_chunks(user_id) if hasattr(vs, "count_user_chunks") else 0
+            total_sql = (
+                db.query(DocumentChunk)
+                .filter(DocumentChunk.user_id == user_id)
+                .count()
+            )
+            # If SQL has chunks but vector store doesn't (incomplete index), fall back
+            if total_sql > 0 and indexed < total_sql:
+                logger.info(
+                    f"Vector index incomplete ({indexed}/{total_sql}), falling back to TF-IDF"
+                )
+                chunks = _load_user_chunks(db, user_id)
+                return retrieve_chunks(question, chunks, top_k)
+            return []
+
+        # Layer 3b: vector search returned fewer than top_k — try TF-IDF merge
+        if len(chunk_ids) < top_k:
+            logger.info(
+                f"Vector search returned only {len(chunk_ids)}/{top_k} results, "
+                f"trying TF-IDF for completeness"
+            )
+            tfidf_chunks = retrieve_chunks(question, _load_user_chunks(db, user_id), top_k)
+            # Merge: vector results first, then TF-IDF deduped
+            seen = set(chunk_ids)
+            for tc in tfidf_chunks:
+                if tc.id not in seen:
+                    chunk_ids.append(tc.id)
+                    seen.add(tc.id)
+                    if len(chunk_ids) >= top_k:
+                        break
+
+        # Fetch matching chunks preserving search rank order
+        chunk_map = {
+            c.id: c
+            for c in db.query(DocumentChunk)
+            .filter(DocumentChunk.id.in_(chunk_ids))
+            .all()
+        }
+        return [chunk_map[cid] for cid in chunk_ids if cid in chunk_map]
+
+    except Exception as exc:
+        logger.warning(f"Vector search failed, falling back to TF-IDF: {exc}")
+        chunks = _load_user_chunks(db, user_id)
+        return retrieve_chunks(question, chunks, top_k)
 
 
 def build_rag_prompt(question: str, retrieved_chunks: List[DocumentChunk]) -> str:

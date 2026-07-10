@@ -1,0 +1,9 @@
+# PostgreSQL + pgvector for production
+# Install: pip install -r requirements-db-pg.txt
+#
+# Project unifies on psycopg v3 as the PostgreSQL driver.
+# DATABASE_URL formats postgresql://, postgres://, and postgresql+psycopg2://
+# are automatically normalized to postgresql+psycopg:// at engine creation
+# (see app/database.py → normalize_database_url).
+psycopg[binary]
+pgvector>=0.3.0

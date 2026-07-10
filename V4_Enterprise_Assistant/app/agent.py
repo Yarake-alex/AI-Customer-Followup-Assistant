@@ -3,17 +3,21 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from app.models import Customer, FollowUp, DocumentChunk
-from app.rag import retrieve_chunks
+from app.rag import retrieve_chunks_vector
 from app.llm import call_llm
 from app.schemas import RagSource
 
 
-def tool_get_customer_profile(db: Session, customer_id: int) -> Optional[Customer]:
+def tool_get_customer_profile(db: Session, customer_id: int, user_id: int) -> Optional[Customer]:
     """
     Tool 1：查询客户基础信息。
     这里用函数形式模拟 Agent Tool，方便后续升级成真正 Tool Calling。
     """
-    return db.query(Customer).filter(Customer.id == customer_id).first()
+    return (
+        db.query(Customer)
+        .filter(Customer.id == customer_id, Customer.user_id == user_id)
+        .first()
+    )
 
 
 def tool_get_followup_records(db: Session, customer_id: int) -> List[FollowUp]:
@@ -28,14 +32,12 @@ def tool_get_followup_records(db: Session, customer_id: int) -> List[FollowUp]:
     )
 
 
-def tool_retrieve_knowledge(db: Session, query: str, top_k: int = 4) -> List[DocumentChunk]:
+def tool_retrieve_knowledge(db: Session, query: str, user_id: int, top_k: int = 4) -> List[DocumentChunk]:
     """
     Tool 3：从 RAG 知识库中检索相关资料片段。
+    使用向量检索（自动降级到 TF-IDF）。
     """
-    chunks = db.query(DocumentChunk).order_by(DocumentChunk.id.asc()).all()
-    if not chunks:
-        return []
-    return retrieve_chunks(query, chunks, top_k=top_k)
+    return retrieve_chunks_vector(db, query, user_id, top_k=top_k)
 
 
 def build_followup_text(followups: List[FollowUp]) -> str:
@@ -114,6 +116,7 @@ def build_agent_prompt(
 def run_customer_followup_agent(
     db: Session,
     customer_id: int,
+    user_id: int,
     task: str,
 ) -> Tuple[List[str], str, List[RagSource]]:
     """
@@ -129,7 +132,7 @@ def run_customer_followup_agent(
     """
     steps = []
 
-    customer = tool_get_customer_profile(db, customer_id)
+    customer = tool_get_customer_profile(db, customer_id, user_id)
     steps.append("Tool 1：查询客户基础信息")
 
     if not customer:
@@ -148,7 +151,7 @@ def run_customer_followup_agent(
 历史跟进：{build_followup_text(followups)}
 """
 
-    retrieved_chunks = tool_retrieve_knowledge(db, retrieval_query, top_k=4)
+    retrieved_chunks = tool_retrieve_knowledge(db, retrieval_query, user_id=user_id, top_k=4)
     steps.append(f"Tool 3：检索知识库资料，命中 {len(retrieved_chunks)} 个相关片段")
 
     prompt = build_agent_prompt(
@@ -159,7 +162,7 @@ def run_customer_followup_agent(
     )
     steps.append("Tool 4：整合客户信息、历史跟进和知识库资料，构造 Agent Prompt")
 
-    result = call_llm(prompt)
+    result = call_llm(prompt, feature="agent_analyze", user_id=user_id, db=db)
     steps.append("Tool 5：调用大模型生成完整客户跟进方案")
 
     sources = [
